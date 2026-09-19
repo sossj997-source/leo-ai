@@ -11,9 +11,9 @@ logger = logging.getLogger("J.A.R.V.I.S")
 try:
     import pyautogui
     _PYAUTOGUI_AVAILABLE = True
-except ImportError:
+except (ImportError, KeyError, Exception) as e:
     _PYAUTOGUI_AVAILABLE = False
-    logger.warning("pyautogui not available — editor typing will be limited")
+    logger.warning(f"pyautogui not available — editor typing disabled: {e}")
 
 
 # ==================================================
