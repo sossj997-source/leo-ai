@@ -14,3 +14,4 @@ edge-tts
 pyautogui
 pillow
 pytesseract
+psutil
