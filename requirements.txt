@@ -1,0 +1,16 @@
+fastapi
+uvicorn[standard]
+langchain
+langchain-groq
+langchain-community
+langchain-core
+python-dotenv
+pydantic
+numpy
+requests
+tavily-python
+pydub
+edge-tts
+pyautogui
+pillow
+pytesseract

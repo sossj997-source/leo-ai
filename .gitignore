@@ -1,0 +1,17 @@
+.env
+.venv
+venv
+__pycache__
+*.pyc
+*.pyo
+*.pyd
+chats_data
+chats_data_backup
+database/chats_data
+database/learning_data/memories.json
+outputs
+user_data
+data/proactive_tasks.json
+.vscode
+*.log
+structure.txt

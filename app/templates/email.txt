@@ -1,0 +1,13 @@
+Format:
+Subject: [Clear subject line]
+
+Dear [Recipient],
+
+[Opening paragraph - purpose]
+
+[Body - details, points, request]
+
+[Closing - call to action or thanks]
+
+Best regards,
+[Name]

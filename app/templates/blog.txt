@@ -1,0 +1,13 @@
+Structure:
+# [Catchy Title]
+
+[Hook - engaging opening]
+
+## [Section 1]
+[Content]
+
+## [Section 2]
+[Content]
+
+## Conclusion
+[Takeaway and call to action]

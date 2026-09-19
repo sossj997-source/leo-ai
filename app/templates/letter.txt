@@ -1,0 +1,15 @@
+Format:
+[Date]
+
+[Recipient Address]
+
+Dear [Recipient],
+
+[Opening - purpose]
+
+[Body - details]
+
+[Closing - request or thanks]
+
+Sincerely,
+[Name]

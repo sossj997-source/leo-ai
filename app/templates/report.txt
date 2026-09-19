@@ -1,0 +1,16 @@
+Structure:
+# [Report Title]
+
+## Introduction
+[Background and purpose]
+
+## Main Findings
+[Key points organized in sections]
+
+## Analysis
+[Interpretation and insights]
+
+## Conclusion
+[Summary and recommendations]
+
+## References (if any)
