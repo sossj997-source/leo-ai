@@ -15,3 +15,5 @@ pyautogui
 pillow
 pytesseract
 psutil
+python-telegram-bot
+httpx

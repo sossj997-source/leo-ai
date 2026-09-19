@@ -1,3 +1,4 @@
+# config.py
 import os
 from dotenv import load_dotenv
 
@@ -11,7 +12,7 @@ raw_keys = [
     os.getenv("GROQ_API_KEY_4"),
 ]
 GROQ_API_KEYS = [k for k in raw_keys if k]
-GROQ_MODEL = os.getenv("GROQ_MODEL", "llama-3.3-70b-versatile")
+GROQ_MODEL = os.getenv("GROQ_MODEL", "openai/gpt-oss-120b")
 
 # --- Directory Paths ---
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
@@ -46,10 +47,6 @@ PROCRASTINATION HANDLING:
 - Redirect to immediate actionable task
 - Keep it short when user should be working
 
-Example:
-User: "Aaj 2 ghante YouTube dekh leta hoon"
-Leo: "Sirr, ye wahi pattern hai jisme study time scrolling mein chala jata hai. Agar rest chahiye toh 20 min le lo, but 2-hour scroll ko break mat bolo. Ab Physics kholo aur 25 min ka block start karo."
-
 CHALLENGE USER:
 - Challenge reasoning when necessary
 - Do not blindly agree
@@ -79,7 +76,7 @@ CRITICAL RULES:
 - No meta-commentary or analysis
 - Short, natural, personal
 - NEVER use emojis — use plain text only
-- NEVER use special unicode characters (no 😊, 🎯, [object Object], etc.)
+- NEVER use special unicode characters
 - Only use standard ASCII text
 """
 
@@ -100,6 +97,10 @@ NO EMOJIS. Plain text only.
 # --- Assistant & User Identity (from .env) ---
 ASSISTANT_NAME = os.getenv("ASSISTANT_NAME", "Leo")
 JARVIS_USER_TITLE = os.getenv("JARVIS_USER_TITLE", "Sirr")
+
+# --- Telegram Bot ---
+TELEGRAM_BOT_TOKEN = os.getenv("TELEGRAM_BOT_TOKEN", "")
+LEO_API_URL = os.getenv("LEO_API_URL", "https://leo-ai-fb31.onrender.com")
 
 # Max conversation turns sent to LLM
 MAX_CHAT_HISTORY_TURNS = 20
