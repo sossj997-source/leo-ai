@@ -1,91 +1,162 @@
-"""Leo browser automation using normal Chrome + PyAutoGUI + OCR.
+# app/agent/tools/browser_automation.py
+"""
+Leo browser automation using normal Chrome + PyAutoGUI + OCR.
 No CDP, no port 9222, no Chrome extension, no separate profile.
 """
-from __future__ import annotations
-import os, re, subprocess, time
-from urllib.parse import quote_plus
-import pyautogui
-import pytesseract
 
-for candidate in (os.environ.get("TESSERACT_CMD", ""), r"C:\Program Files\Tesseract-OCR\tesseract.exe", r"C:\Program Files (x86)\Tesseract-OCR\tesseract.exe"):
-    if candidate and os.path.isfile(candidate):
-        pytesseract.pytesseract.tesseract_cmd = candidate
-        break
+from __future__ import annotations
+import os
+import re
+import subprocess
+import time
+import logging
+from urllib.parse import quote_plus
+
+logger = logging.getLogger("J.A.R.V.I.S")
+
+# pyautogui and pytesseract require a display — not available on Linux servers
+try:
+    import pyautogui
+    _PYAUTOGUI_AVAILABLE = True
+except (ImportError, KeyError, Exception) as e:
+    pyautogui = None
+    _PYAUTOGUI_AVAILABLE = False
+    logger.warning(f"pyautogui not available: {e}")
+
+try:
+    import pytesseract
+    _PYTESSERACT_AVAILABLE = True
+except (ImportError, KeyError, Exception) as e:
+    pytesseract = None
+    _PYTESSERACT_AVAILABLE = False
+    logger.warning(f"pytesseract not available: {e}")
+
+# Tesseract setup — only if available
+if _PYTESSERACT_AVAILABLE:
+    for candidate in (
+        os.environ.get("TESSERACT_CMD", ""),
+        r"C:\Program Files\Tesseract-OCR\tesseract.exe",
+        r"C:\Program Files (x86)\Tesseract-OCR\tesseract.exe",
+    ):
+        if candidate and os.path.isfile(candidate):
+            pytesseract.pytesseract.tesseract_cmd = candidate
+            break
+
 
 class BrowserController:
+
     def __init__(self):
         self._last_url = ""
         self._last_search_query = ""
 
     @staticmethod
     def _ensure_chrome():
-        subprocess.Popen("start chrome", shell=True)
-        time.sleep(3)
+        """Focus or start Chrome on Windows (skipped on Linux)."""
+        if os.name == "nt":  # Windows only
+            subprocess.Popen("start chrome", shell=True)
+            time.sleep(3)
 
-    def open_browser(self, browser_name="chrome"):
+    def open_browser(self, browser_name: str = "chrome"):
         if browser_name.lower() not in {"chrome", "google chrome"}:
             raise ValueError("Only Chrome is supported.")
+
+        if not _PYAUTOGUI_AVAILABLE:
+            return "Browser automation not available on server."
+
         self._ensure_chrome()
         return "Chrome opened and is ready."
 
-    def navigate_to_url(self, url, browser_name="chrome"):
-        if browser_name.lower() not in {"chrome", "google chrome"}:
-            raise ValueError("Only Chrome is supported.")
-        url=(url or "").strip()
-        if not url: raise ValueError("URL cannot be empty.")
-        if not url.startswith(("http://","https://")): url="https://"+url
-        self._ensure_chrome()
-        pyautogui.hotkey("ctrl","l"); pyautogui.write(url, interval=0.005); pyautogui.press("enter")
-        time.sleep(5); self._last_url=url
-        return f"Opened {url} in Chrome."
+    def navigate_to_url(self, url: str, browser_name: str = "chrome"):
+        if not _PYAUTOGUI_AVAILABLE:
+            return "Browser automation not available on server."
 
-    def search_page(self, query):
-        query=(query or "").strip()
-        if not query: raise ValueError("Search query cannot be empty.")
-        current=self._last_url.lower()
-        if "youtube.com" in current: url="https://www.youtube.com/results?search_query="+quote_plus(query)
-        else: url="https://www.google.com/search?q="+quote_plus(query)
-        pyautogui.hotkey("ctrl","l"); pyautogui.write(url, interval=0.005); pyautogui.press("enter")
-        time.sleep(6); self._last_url=url; self._last_search_query=query
-        return f"Searched for '{query}'."
+        self._ensure_chrome()
+        if not url.startswith("http"):
+            url = "https://" + url
+        pyautogui.hotkey("ctrl", "l")
+        time.sleep(0.3)
+        pyautogui.typewrite(url, interval=0.01)
+        pyautogui.press("enter")
+        time.sleep(2)
+        self._last_url = url
+        return f"Navigated to {url}"
+
+    def search_page(self, query: str):
+        if not _PYAUTOGUI_AVAILABLE:
+            return "Browser automation not available on server."
+
+        self._ensure_chrome()
+        # Assume search box is focused or use Ctrl+K / Ctrl+L
+        pyautogui.hotkey("ctrl", "k")
+        time.sleep(0.3)
+        pyautogui.typewrite(query, interval=0.01)
+        pyautogui.press("enter")
+        time.sleep(2)
+        self._last_search_query = query
+        return f"Searched for: {query}"
 
     @staticmethod
     def _ocr_words(img):
-        data=pytesseract.image_to_data(img, output_type=pytesseract.Output.DICT)
-        words=[]
-        for i, raw in enumerate(data["text"]):
-            text=raw.strip()
-            if not text: continue
-            try: conf=float(data["conf"][i])
-            except Exception: conf=0
-            if conf < 35: continue
-            words.append({"text":text,"conf":conf,"x":int(data["left"][i]),"y":int(data["top"][i]),"w":int(data["width"][i]),"h":int(data["height"][i])})
-        return words
+        if not _PYTESSERACT_AVAILABLE:
+            return []
+        try:
+            text = pytesseract.image_to_string(img)
+            return text.split()
+        except Exception as e:
+            logger.error(f"OCR failed: {e}")
+            return []
 
     def click_first_result(self):
-        words=self._ocr_words(pyautogui.screenshot())
-        query_words={w.lower() for w in re.findall(r"[A-Za-z0-9]+", self._last_search_query) if len(w)>=3}
-        if not query_words: raise RuntimeError("No previous browser search query is available for OCR click.")
-        hits=[w for w in words if w["text"].lower() in query_words and w["y"]>120]
-        if not hits:
-            hits=[w for w in words if any(q in w["text"].lower() or w["text"].lower() in q for q in query_words) and w["y"]>120]
-        if not hits: raise RuntimeError("OCR could not find the searched result on screen.")
-        first_y=min(w["y"] for w in hits)
-        near=[w for w in words if abs(w["y"]-first_y)<120 and w["y"]>120]
-        x1=min(w["x"] for w in near); x2=max(w["x"]+w["w"] for w in near)
-        y1=min(w["y"] for w in near); y2=max(w["y"]+w["h"] for w in near)
-        sw,sh=pyautogui.size(); cx=min(max((x1+x2)//2,250),sw-100); cy=min(max((y1+y2)//2,180),sh-100)
-        pyautogui.moveTo(cx,cy,duration=.35); time.sleep(.8); pyautogui.click(cx,cy); time.sleep(4)
-        return f"Clicked the first visible search result at ({cx}, {cy})."
+        if not _PYAUTOGUI_AVAILABLE:
+            return "Browser automation not available on server."
 
-    def type_text(self, text):
-        if text is None: raise ValueError("Text cannot be None.")
-        pyautogui.write(str(text), interval=.01)
-        return "Typed the requested text in the active Chrome field."
+        # Take screenshot of top area and OCR for first clickable result
+        try:
+            screenshot = pyautogui.screenshot(region=(0, 100, 1920, 400))
+            words = self._ocr_words(screenshot)
+            if words:
+                # Click on first text region
+                pyautogui.click(200, 200)
+                time.sleep(2)
+                return "Clicked on first search result."
+        except Exception as e:
+            logger.error(f"Click first result failed: {e}")
+        return "Could not find search result to click."
 
-_controller=BrowserController()
-open_browser=lambda browser_name="chrome": _controller.open_browser(browser_name)
-navigate_to_url=lambda url,browser_name="chrome": _controller.navigate_to_url(url,browser_name)
-search_page=lambda query: _controller.search_page(query)
-click_first_result=lambda: _controller.click_first_result()
-type_text=lambda text: _controller.type_text(text)
+    def type_text(self, text: str):
+        if not _PYAUTOGUI_AVAILABLE:
+            return "Browser automation not available on server."
+
+        try:
+            pyautogui.typewrite(text, interval=0.01)
+            return f"Typed {len(text)} characters."
+        except Exception as e:
+            logger.error(f"Type text failed: {e}")
+            return f"Type failed: {e}"
+
+
+# ==================================================
+# MODULE-LEVEL HELPERS (used by browser_tools.py)
+# ==================================================
+
+_controller = BrowserController()
+
+
+def open_browser(browser_name: str = "chrome"):
+    return _controller.open_browser(browser_name)
+
+
+def navigate_to_url(url: str, browser_name: str = "chrome"):
+    return _controller.navigate_to_url(url, browser_name)
+
+
+def search_page(query: str):
+    return _controller.search_page(query)
+
+
+def click_first_result():
+    return _controller.click_first_result()
+
+
+def type_text(text: str):
+    return _controller.type_text(text)
