@@ -1,12 +1,38 @@
-import ctypes
+# app/agent/activity_monitor.py
+import sys
 import threading
 import time
+import logging
 from typing import Optional
 
 import psutil
-import pygetwindow
 
 from .proactive_engine import ProactiveEngine, ProactiveEvent
+
+logger = logging.getLogger("J.A.R.V.I.S")
+
+# Windows-specific imports — only available on Windows
+_PYGETWINDOW_AVAILABLE = False
+_CTYPES_AVAILABLE = False
+
+if sys.platform == "win32":
+    try:
+        import ctypes
+        _CTYPES_AVAILABLE = True
+    except (ImportError, Exception) as e:
+        ctypes = None
+        logger.warning(f"ctypes not available: {e}")
+
+    try:
+        import pygetwindow
+        _PYGETWINDOW_AVAILABLE = True
+    except (ImportError, Exception) as e:
+        pygetwindow = None
+        logger.warning(f"pygetwindow not available: {e}")
+else:
+    ctypes = None
+    pygetwindow = None
+    logger.info("ActivityMonitor disabled — not supported on this platform")
 
 
 class ActivityMonitor:
@@ -14,6 +40,7 @@ class ActivityMonitor:
     Monitors the currently active Windows application/window.
 
     Emits an app_changed event only when the active app/window changes.
+    NOTE: This feature only works on Windows. On Linux servers, it is disabled.
     """
 
     def __init__(
@@ -29,6 +56,10 @@ class ActivityMonitor:
         self._last_key = None
 
     def _get_active_window_info(self):
+        """Get info about the currently active window (Windows only)."""
+        if not _PYGETWINDOW_AVAILABLE or not _CTYPES_AVAILABLE:
+            return None
+
         try:
             window = pygetwindow.getActiveWindow()
 
@@ -48,121 +79,92 @@ class ActivityMonitor:
 
             user32.GetWindowThreadProcessId(
                 hwnd,
-                ctypes.byref(pid),
+                ctypes.byref(pid)
             )
 
-            process_name = "unknown.exe"
+            process_name = "unknown"
 
             try:
                 process = psutil.Process(pid.value)
                 process_name = process.name()
+
             except (psutil.NoSuchProcess, psutil.AccessDenied):
                 pass
 
             return {
-                "app": process_name,
                 "title": title,
-                "hwnd": hwnd,
+                "process": process_name,
+                "pid": pid.value,
             }
 
         except Exception as e:
-            print(f"[ActivityMonitor] Window detection failed: {e}")
+            logger.debug(f"Could not get active window: {e}")
             return None
 
     def _check_activity(self):
+        """Check for active window change and emit event."""
+        if not _PYGETWINDOW_AVAILABLE:
+            return
+
         info = self._get_active_window_info()
 
         if info is None:
             return
 
-        current_key = (
-            info["app"],
-            info["title"],
-            info["hwnd"],
-        )
+        current_key = f"{info['process']}::{info['title']}"
 
-        if current_key == self._last_key:
-            return
+        if current_key != self._last_key:
+            self._last_key = current_key
 
-        previous = self._last_key
-        self._last_key = current_key
+            event = ProactiveEvent(
+                type="app_changed",
+                data={
+                    "app": info["process"],
+                    "title": info["title"],
+                    "pid": info["pid"],
+                },
+            )
 
-        event = ProactiveEvent(
-            event_type="app_changed",
-            data={
-                "app": info["app"],
-                "title": info["title"],
-                "hwnd": info["hwnd"],
-                "previous": previous,
-            },
-        )
-
-        self.engine.emit(event)
+            self.engine.emit(event)
 
     def _loop(self):
+        """Main monitoring loop."""
         while self.running:
             try:
                 self._check_activity()
             except Exception as e:
-                print(f"[ActivityMonitor] Check failed: {e}")
+                logger.error(f"ActivityMonitor loop error: {e}")
 
             time.sleep(self.poll_interval)
 
     def start(self):
+        """Start monitoring (only works on Windows)."""
+        if not _PYGETWINDOW_AVAILABLE:
+            logger.info("ActivityMonitor skipped — pygetwindow not available (non-Windows platform)")
+            return
+
         if self.running:
             return
 
         self.running = True
-
-        self._thread = threading.Thread(
-            target=self._loop,
-            name="LEO-ActivityMonitor",
-            daemon=True,
-        )
-
+        self._thread = threading.Thread(target=self._loop, daemon=True)
         self._thread.start()
-
-        print("[ActivityMonitor] Started")
+        logger.info("[ActivityMonitor] Started")
 
     def stop(self):
+        """Stop monitoring."""
         self.running = False
 
-        if self._thread and self._thread.is_alive():
+        if self._thread:
             self._thread.join(timeout=2)
+            self._thread = None
 
-        print("[ActivityMonitor] Stopped")
+        logger.info("[ActivityMonitor] Stopped")
 
     def get_status(self):
+        """Return current status."""
         return {
             "running": self.running,
-            "last_activity": self._last_key,
-            "poll_interval": self.poll_interval,
+            "available": _PYGETWINDOW_AVAILABLE,
+            "platform": sys.platform,
         }
-
-
-if __name__ == "__main__":
-
-    engine = ProactiveEngine()
-
-    def show_event(event):
-        print("EVENT:", event.data)
-
-    engine.add_rule(
-        __import__(
-            "app.agent.proactive_engine",
-            fromlist=["ProactiveRule"],
-        ).ProactiveRule(
-            name="activity_test",
-            condition=lambda event: event.event_type == "app_changed",
-            action=show_event,
-        )
-    )
-
-    monitor = ActivityMonitor(engine)
-
-    monitor.start()
-
-    try:
-        time.sleep(15)
-    finally:
-        monitor.stop()
