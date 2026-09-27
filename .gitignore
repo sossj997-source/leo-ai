@@ -15,3 +15,8 @@ data/proactive_tasks.json
 .vscode
 *.log
 structure.txt
+
+# Build artifacts
+dist/
+build/
+*.spec
