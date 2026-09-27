@@ -91,6 +91,9 @@ async def lifespan(app: FastAPI):
 
         register_writing_tools(tool_registry, writing_service)
         print("WRITING TOOLS REGISTERED SUCCESSFULLY")
+        from app.agent.tools.self_code_tools import register_self_code_tools
+        register_self_code_tools(tool_registry)
+        print("SELF-CODE TOOLS REGISTERED SUCCESSFULLY")
 
         # Start Telegram Bot
         try:

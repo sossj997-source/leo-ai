@@ -1,0 +1,24 @@
+{
+  "tools": {
+    "get_current_ist_time": {
+      "name": "get_current_ist_time",
+      "file": "app\\agent\\tools\\auto_tools\\get_current_ist_time.py",
+      "description": "make a tool that returns current time in IST"
+    },
+    "get_city_weather": {
+      "name": "get_city_weather",
+      "file": "app\\agent\\tools\\auto_tools\\get_city_weather.py",
+      "description": "make a tool that returns current weather of a city using wttr.in"
+    },
+    "number_to_words": {
+      "name": "number_to_words",
+      "file": "app\\agent\\tools\\auto_tools\\number_to_words.py",
+      "description": "make a tool that converts any number to words in english"
+    },
+    "get_top5_rss_headlines": {
+      "name": "get_top5_rss_headlines",
+      "file": "app\\agent\\tools\\auto_tools\\get_top5_rss_headlines.py",
+      "description": "make a tool that returns top 5 news headlines from a given RSS feed url"
+    }
+  }
+}
