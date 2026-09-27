@@ -2,7 +2,7 @@
    J.A.R.V.I.S — FRONTEND CONTROLLER
    ================================================================ */
 
-   const API = 'https://localhost:8000';
+   const API = 'https://leo-ai-fb31.onrender.com';
 
    let sessionId = null;
    let currentMode = 'general';
