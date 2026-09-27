@@ -33,70 +33,70 @@ telegram_task = None
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     global vector_store, groq_service, realtime_service, chat_service, writing_service, agent, tool_registry, telegram_task
-    
+
     print("=" * 60)
     print("J.A.R.V.I.S - Starting Up...")
     print("=" * 60)
-    
+
     try:
         from app.services.vector_store import VectorStoreService
         print("Initializing vector store service...")
         vector_store = VectorStoreService()
         print("Vector store initialized successfully")
-        
+
         from app.services.groq_service import GroqService
         print("Initializing Groq service...")
         groq_service = GroqService(vector_store)
         print("Groq service initialized successfully")
-        
+
         from app.services.realtime_service import RealTimeGroqService
         print("Initializing Realtime Groq service...")
         realtime_service = RealTimeGroqService(vector_store)
         print("Realtime Groq service initialized successfully")
-        
+
         from app.services.chat_service import ChatService
         print("Initializing ChatService...")
         chat_service = ChatService(groq_service, realtime_service)
         print("Chat service initialized successfully")
-        
+
         from app.services.writing_service import WritingService
         from app.agent.tools.writing_tools import register_writing_tools
         print("Initializing WritingService...")
         writing_service = WritingService(groq_service)
         print("WritingService initialized successfully")
-        
+
         from app.agent.agent import Agent
         from app.agent.tool_registry import ToolRegistry
         from app.agent.tools.register_tools import register_basic_tools
         from app.agent.proactive_manager import ProactiveManager
-        
+
         print("Initializing ProactiveManager...")
         proactive_manager = ProactiveManager()
         proactive_manager.start()
-        
+
         from app.agent.activity_monitor import ActivityMonitor
         activity_monitor = ActivityMonitor(
             engine=proactive_manager.engine,
             poll_interval=1.0,
         )
         activity_monitor.start()
-        
+
         print("Initializing tool registry...")
         tool_registry = ToolRegistry()
         register_basic_tools(tool_registry, proactive_manager=proactive_manager)
-        
+
         print("Initializing Agent...")
         agent = Agent(groq_service=groq_service, tool_registry=tool_registry)
         print(f"AGENT INITIALIZED SUCCESSFULLY WITH {len(tool_registry)} TOOLS")
-        
+
         register_writing_tools(tool_registry, writing_service)
         print("WRITING TOOLS REGISTERED SUCCESSFULLY")
-        
+
         # Start Telegram Bot
         try:
             from app.telegram_bot import start_telegram_bot
             from config import TELEGRAM_BOT_TOKEN
-            
+
             if TELEGRAM_BOT_TOKEN:
                 telegram_app = start_telegram_bot()
                 if telegram_app:
@@ -112,13 +112,13 @@ async def lifespan(app: FastAPI):
                 print("TELEGRAM BOT NOT STARTED (token missing)")
         except Exception as e:
             print(f"TELEGRAM BOT ERROR: {e}")
-        
+
         print("=" * 60)
         print("ALL SERVICES INITIALIZED SUCCESSFULLY")
         print("=" * 60)
-        
+
         yield
-        
+
         print("Shutting down J.A.R.V.I.S...")
         if telegram_task:
             telegram_task.cancel()
@@ -127,7 +127,7 @@ async def lifespan(app: FastAPI):
             except asyncio.CancelledError:
                 pass
             print("Telegram bot stopped")
-        
+
     except Exception as e:
         print(f"CRITICAL ERROR INITIALIZING SERVICES: {repr(e)}")
         raise
@@ -171,7 +171,7 @@ class WritingRequest(BaseModel):
 
 
 # ==================================================
-# CHAT
+# CHAT (non-streaming)
 # ==================================================
 @app.post("/chat")
 async def chat(req: ChatRequest):
@@ -186,7 +186,7 @@ async def chat(req: ChatRequest):
 
 
 # ==================================================
-# REALTIME CHAT
+# REALTIME CHAT (non-streaming)
 # ==================================================
 @app.post("/chat/realtime")
 async def chat_realtime(req: ChatRequest):
@@ -198,6 +198,72 @@ async def chat_realtime(req: ChatRequest):
         return {"session_id": session_id, "response": response}
     except Exception as e:
         raise HTTPException(status_code=400, detail=str(e))
+
+
+# ==================================================
+# CHAT STREAM (SSE)
+# ==================================================
+@app.post("/chat/stream")
+async def chat_stream(req: ChatRequest):
+    if chat_service is None:
+        raise HTTPException(status_code=503, detail="Chat service not initialized.")
+
+    async def event_generator():
+        try:
+            session_id = chat_service.get_or_create_session(req.session_id)
+            yield f"data: {json.dumps({'session_id': session_id})}\n\n"
+
+            for chunk in chat_service.process_message_stream(session_id, req.message):
+                if chunk:
+                    yield f"data: {json.dumps({'chunk': chunk})}\n\n"
+
+            yield f"data: {json.dumps({'done': True})}\n\n"
+
+        except Exception as e:
+            logger.error(f"Stream error: {e}")
+            yield f"data: {json.dumps({'error': str(e)})}\n\n"
+
+    return StreamingResponse(
+        event_generator(),
+        media_type="text/event-stream",
+        headers={
+            "Cache-Control": "no-cache",
+            "X-Accel-Buffering": "no",
+        },
+    )
+
+
+# ==================================================
+# REALTIME CHAT STREAM (SSE)
+# ==================================================
+@app.post("/chat/realtime/stream")
+async def chat_realtime_stream(req: ChatRequest):
+    if chat_service is None:
+        raise HTTPException(status_code=503, detail="Chat service not initialized.")
+
+    async def event_generator():
+        try:
+            session_id = chat_service.get_or_create_session(req.session_id)
+            yield f"data: {json.dumps({'session_id': session_id})}\n\n"
+
+            for chunk in chat_service.process_realtime_message_stream(session_id, req.message):
+                if chunk:
+                    yield f"data: {json.dumps({'chunk': chunk})}\n\n"
+
+            yield f"data: {json.dumps({'done': True})}\n\n"
+
+        except Exception as e:
+            logger.error(f"Realtime stream error: {e}")
+            yield f"data: {json.dumps({'error': str(e)})}\n\n"
+
+    return StreamingResponse(
+        event_generator(),
+        media_type="text/event-stream",
+        headers={
+            "Cache-Control": "no-cache",
+            "X-Accel-Buffering": "no",
+        },
+    )
 
 
 # ==================================================
