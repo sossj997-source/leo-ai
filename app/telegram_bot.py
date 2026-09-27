@@ -161,7 +161,7 @@ async def handle_voice(update: Update, context: ContextTypes.DEFAULT_TYPE) -> No
         return
 
     from groq import Groq
-    from config import GROQ_API_KEY
+    from config import GROQ_API_KEYSS
 
     await update.message.chat.send_action(action="typing")
 
@@ -171,7 +171,7 @@ async def handle_voice(update: Update, context: ContextTypes.DEFAULT_TYPE) -> No
         audio_bytes = await voice_file.download_as_bytearray()
 
         # Transcribe via Groq Whisper
-        groq_client = Groq(api_key=GROQ_API_KEY)
+        groq_client = Groq(api_key=GROQ_API_KEYS[0])
         transcription = groq_client.audio.transcriptions.create(
             file=("voice.ogg", bytes(audio_bytes)),
             model="whisper-large-v3-turbo",
