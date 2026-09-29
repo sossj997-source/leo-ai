@@ -1,19 +1,29 @@
 {
   "tools": {
-    "number_to_words": {
-      "name": "number_to_words",
-      "file": "app\\agent\\tools\\auto_tools\\number_to_words.py",
-      "description": "make a tool that converts a positive integer (max 999 trillion) to words in english. Do not use recursion. Use iterative logic with lists."
+    "get_current_ist_time": {
+      "name": "get_current_ist_time",
+      "file": "app/agent/tools/auto_tools/get_current_ist_time.py",
+      "description": "get current time in IST"
     },
-    "int_to_english": {
-      "name": "int_to_english",
-      "file": "app\\agent\\tools\\auto_tools\\int_to_english.py",
-      "description": "make a tool that converts a positive integer (max 999 trillion) to words in english. Do not use recursion. Use iterative logic with lists."
+    "get_city_weather": {
+      "name": "get_city_weather",
+      "file": "app/agent/tools/auto_tools/get_city_weather.py",
+      "description": "get current weather of a city using wttr.in"
+    },
+    "get_top5_rss_headlines": {
+      "name": "get_top5_rss_headlines",
+      "file": "app/agent/tools/auto_tools/get_top5_rss_headlines.py",
+      "description": "get top 5 headlines from RSS feed"
     },
     "get_top_five_headlines": {
       "name": "get_top_five_headlines",
-      "file": "app\\agent\\tools\\auto_tools\\get_top_five_headlines.py",
-      "description": "make a tool that takes an RSS feed url and returns top 5 headlines. Argument name should be url."
+      "file": "app/agent/tools/auto_tools/get_top_five_headlines.py",
+      "description": "get top 5 headlines from RSS feed (url arg)"
+    },
+    "int_to_english": {
+      "name": "int_to_english",
+      "file": "app/agent/tools/auto_tools/int_to_english.py",
+      "description": "convert positive integer to words in english"
     }
   }
 }

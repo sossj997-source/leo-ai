@@ -1,19 +1,22 @@
-from aiohttp import web
+# frontend/https_server.py
+import http.server
 import ssl
+import os
 
-async def index(request):
-    return web.FileResponse("index.html")
+PORT = 5500
+DIR = os.path.dirname(os.path.abspath(__file__))
 
-app = web.Application()
-app.router.add_get("/", index)
-app.router.add_static("/", ".")
+os.chdir(DIR)
 
-ssl_context = ssl.create_default_context(ssl.Purpose.CLIENT_AUTH)
-ssl_context.load_cert_chain("localhost-cert.pem", "localhost-key.pem")
+httpd = http.server.HTTPServer(("0.0.0.0", PORT), http.server.SimpleHTTPRequestHandler)
 
-web.run_app(
-    app,
-    host="0.0.0.0",
-    port=5500,
-    ssl_context=ssl_context
+ssl_context = ssl.SSLContext(ssl.PROTOCOL_TLS_SERVER)
+ssl_context.load_cert_chain(
+    os.path.join(DIR, "localhost-cert.pem"),
+    os.path.join(DIR, "localhost-key.pem"),
 )
+httpd.socket = ssl_context.wrap_socket(httpd.socket, server_side=True)
+
+print(f"===== Running on https://0.0.0.0:{PORT} =====")
+print("(Press CTRL+C to quit)")
+httpd.serve_forever()

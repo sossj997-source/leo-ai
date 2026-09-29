@@ -1,260 +1,1557 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <!-- ============================================================
-         META TAGS & PAGE CONFIGURATION
-         These tags control how the page is displayed and behaves
-         across different devices, especially mobile.
-         ============================================================ -->
+<meta charset="UTF-8">
+<title>Leo</title>
+<style>
+  :root {
+    --accent: #00d4aa;
+    --accent-bright: #00ffcc;
+    --bg: #000;
+    --fg: #e0e0e0;
+    --muted: #666;
+    --danger: #ff5566;
+    --warn: #ffaa00;
+    --panel-bg: rgba(0, 212, 170, 0.05);
+    --panel-border: rgba(0, 212, 170, 0.25);
+    --mono: 'Consolas', 'Courier New', monospace;
+  }
 
-    <!-- Character encoding: UTF-8 ensures proper display of international
-         characters (accents, emoji, non-Latin scripts). -->
-    <meta charset="UTF-8">
+  * { margin: 0; padding: 0; box-sizing: border-box; }
 
-    <!-- VIEWPORT: Critical for responsive design on mobile devices.
-         - width=device-width: Match the screen width of the device
-         - initial-scale=1.0: No zoom on load (1:1 pixel ratio)
-         - maximum-scale=1.0, user-scalable=no: Prevents pinch-zoom
-           (useful for app-like experiences where zoom would break layout)
-         - viewport-fit=cover: Extends content into the "safe area" on
-           iOS devices with notches (iPhone X+). Without this, content
-           would stop at the notch edges, leaving awkward gaps. -->
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+  html, body {
+    background: var(--bg);
+    color: var(--fg);
+    font-family: 'Segoe UI', system-ui, sans-serif;
+    height: 100vh;
+    overflow: hidden;
+  }
 
-    <!-- APPLE-MOBILE-WEB-APP-CAPABLE: When "Add to Home Screen" is used
-         on iOS, this makes the page open in standalone mode (no Safari
-         UI bars). The page looks and feels like a native app. -->
-    <meta name="apple-mobile-web-app-capable" content="yes">
+  body::before {
+    content: '';
+    position: fixed;
+    top: 50%; left: 50%;
+    transform: translate(-50%, -50%);
+    width: 900px; height: 900px;
+    background: radial-gradient(circle, rgba(0, 212, 170, 0.1) 0%, transparent 60%);
+    pointer-events: none;
+    z-index: 0;
+  }
 
-    <!-- APPLE-MOBILE-WEB-APP-STATUS-BAR-STYLE: Controls the iOS status
-         bar appearance in standalone mode. "black-translucent" makes
-         the status bar transparent so content can extend underneath. -->
-    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  /* ---------- Layout ---------- */
+  .stage {
+    width: 100%; height: 100%;
+    display: grid;
+    grid-template-rows: 60px 1fr 90px;
+    position: relative;
+    z-index: 1;
+  }
 
-    <!-- THEME-COLOR: Sets the browser chrome color (address bar on
-         mobile Chrome, status bar on Android). Creates a cohesive
-         look when the page loads. -->
-    <meta name="theme-color" content="#050510">
+  .main-grid {
+    display: grid;
+    grid-template-columns: 320px 1fr 340px;
+    overflow: hidden;
+  }
 
-    <title>J.A.R.V.I.S</title>
+  /* ---------- Top Bar ---------- */
+  .top-bar {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 0 30px;
+    font-family: var(--mono);
+    font-size: 12px;
+    color: var(--accent);
+    letter-spacing: 1.5px;
+  }
 
-    <!-- GOOGLE FONTS: Loads Poppins with multiple weights (300-700).
-         display=swap prevents invisible text while font loads (FOUT
-         instead of FOIT). The font gives the UI a modern, clean look. -->
-    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="style.css">
+  .widget {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    background: var(--panel-bg);
+    padding: 6px 14px;
+    border: 1px solid var(--panel-border);
+    border-radius: 6px;
+    backdrop-filter: blur(8px);
+  }
+
+  .widget svg {
+    width: 14px; height: 14px;
+    stroke: var(--accent);
+    fill: none;
+    stroke-width: 1.8;
+  }
+
+  .battery-fill {
+    width: 24px; height: 10px;
+    border: 1.5px solid var(--accent);
+    border-radius: 2px;
+    padding: 1px;
+    position: relative;
+  }
+
+  .battery-fill::after {
+    content: '';
+    position: absolute;
+    right: -3px; top: 3px;
+    width: 2px; height: 4px;
+    background: var(--accent);
+    border-radius: 0 1px 1px 0;
+  }
+
+  .battery-level {
+    height: 100%;
+    background: var(--accent);
+    border-radius: 1px;
+    transition: width 0.3s ease;
+  }
+
+  .status-center {
+    color: var(--accent);
+    font-size: 11px;
+    letter-spacing: 3px;
+  }
+
+  .status-center::before {
+    content: '●';
+    margin-right: 6px;
+    animation: pulse 2s infinite;
+  }
+
+  @keyframes pulse {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.3; }
+  }
+
+  /* ---------- Side Panels ---------- */
+  .side-panel {
+    padding: 16px 14px;
+    overflow-y: auto;
+    font-size: 12px;
+  }
+
+  .side-panel::-webkit-scrollbar { width: 3px; }
+  .side-panel::-webkit-scrollbar-track { background: transparent; }
+  .side-panel::-webkit-scrollbar-thumb {
+    background: rgba(0, 212, 170, 0.2);
+    border-radius: 2px;
+  }
+
+  /* ---------- Panel Tabs ---------- */
+  .panel-tabs {
+    display: flex;
+    gap: 4px;
+    margin-bottom: 14px;
+    border-bottom: 1px solid rgba(0, 212, 170, 0.15);
+    padding-bottom: 8px;
+  }
+
+  .ptab {
+    flex: 1;
+    padding: 6px 4px;
+    background: transparent;
+    border: 1px solid rgba(0, 212, 170, 0.2);
+    color: var(--muted);
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 9px;
+    font-family: var(--mono);
+    letter-spacing: 1px;
+    transition: all 0.2s;
+  }
+
+  .ptab.active {
+    background: rgba(0, 212, 170, 0.15);
+    color: var(--accent);
+    border-color: rgba(0, 212, 170, 0.5);
+  }
+
+  .tab-content { display: none; }
+  .tab-content.active { display: block; }
+
+  /* ---------- Panel Items ---------- */
+  .panel-title {
+    color: var(--accent);
+    font-size: 10px;
+    letter-spacing: 3px;
+    margin-bottom: 12px;
+    font-family: var(--mono);
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    text-shadow: 0 0 8px rgba(0, 212, 170, 0.5);
+  }
+
+  .panel-title::before {
+    content: '';
+    width: 6px; height: 6px;
+    background: var(--accent);
+    border-radius: 50%;
+    box-shadow: 0 0 8px var(--accent);
+    flex-shrink: 0;
+  }
+
+  .add-btn {
+    margin-left: auto;
+    background: transparent;
+    border: 1px solid rgba(0, 212, 170, 0.4);
+    color: var(--accent);
+    border-radius: 3px;
+    cursor: pointer;
+    font-size: 10px;
+    padding: 2px 6px;
+    font-family: var(--mono);
+    transition: all 0.2s;
+  }
+
+  .add-btn:hover { background: rgba(0, 212, 170, 0.2); }
+
+  .panel-item {
+    display: flex;
+    align-items: flex-start;
+    gap: 8px;
+    padding: 8px 10px;
+    margin-bottom: 6px;
+    background: rgba(0, 212, 170, 0.03);
+    border-radius: 6px;
+    border-left: 2px solid rgba(0, 212, 170, 0.3);
+    font-size: 11px;
+    transition: all 0.2s;
+    backdrop-filter: blur(4px);
+    cursor: pointer;
+    position: relative;
+  }
+
+  .panel-item:hover {
+    border-left-color: var(--accent);
+    background: rgba(0, 212, 170, 0.08);
+  }
+
+  .panel-item .icon {
+    color: var(--accent);
+    font-family: var(--mono);
+    font-size: 11px;
+    min-width: 16px;
+  }
+
+  .panel-item .text {
+    color: #c0c0c0;
+    line-height: 1.4;
+    word-break: break-all;
+    flex: 1;
+  }
+
+  .panel-item .meta {
+    color: var(--muted);
+    font-size: 9px;
+    margin-top: 2px;
+    font-family: var(--mono);
+  }
+
+  .panel-item.success .icon { color: #00ff88; }
+  .panel-item.fail .icon { color: var(--danger); }
+  .panel-item.pending .icon { color: var(--warn); }
+
+  .del-btn {
+    display: none;
+    position: absolute;
+    right: 6px; top: 6px;
+    background: transparent;
+    border: none;
+    color: var(--danger);
+    cursor: pointer;
+    font-size: 14px;
+    padding: 0 4px;
+  }
+
+  .panel-item:hover .del-btn { display: block; }
+
+  /* ---------- Scan Status ---------- */
+  .scan-status {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 10px 12px;
+    margin-bottom: 12px;
+    background: rgba(0, 212, 170, 0.08);
+    border: 1px solid rgba(0, 212, 170, 0.3);
+    border-radius: 6px;
+    font-family: var(--mono);
+    font-size: 10px;
+    color: var(--accent);
+    letter-spacing: 1px;
+  }
+
+  .scan-status.warn {
+    background: rgba(255, 85, 102, 0.1);
+    border-color: var(--danger);
+    color: var(--danger);
+  }
+
+  .scan-pulse {
+    width: 8px; height: 8px;
+    background: var(--accent);
+    border-radius: 50%;
+    box-shadow: 0 0 8px var(--accent);
+    animation: pulse 1.5s infinite;
+    flex-shrink: 0;
+  }
+
+  .scan-status.warn .scan-pulse {
+    background: var(--danger);
+    box-shadow: 0 0 8px var(--danger);
+  }
+
+  /* ---------- Horizontal Calendar ---------- */
+  .hcal {
+    background: rgba(0, 212, 170, 0.04);
+    border: 1px solid rgba(0, 212, 170, 0.2);
+    border-radius: 10px;
+    padding: 14px;
+    margin-top: 20px;
+  }
+
+  .hcal-head { text-align: center; margin-bottom: 14px; }
+
+  .hcal-month {
+    color: var(--accent);
+    font-family: var(--mono);
+    font-size: 12px;
+    letter-spacing: 4px;
+  }
+
+  .hcal-sub {
+    color: var(--muted);
+    font-size: 9px;
+    margin-top: 3px;
+    font-family: var(--mono);
+    letter-spacing: 2px;
+  }
+
+  .hcal-strip {
+    display: flex;
+    gap: 3px;
+    justify-content: space-between;
+  }
+
+  .hcal-day {
+    flex: 1;
+    text-align: center;
+    padding: 10px 2px;
+    background: rgba(0, 212, 170, 0.05);
+    border-radius: 6px;
+    cursor: pointer;
+    transition: all 0.2s;
+    border: 1px solid transparent;
+    position: relative;
+  }
+
+  .hcal-day:hover {
+    background: rgba(0, 212, 170, 0.12);
+    border-color: rgba(0, 212, 170, 0.3);
+  }
+
+  .hcal-wd {
+    color: rgba(0, 212, 170, 0.53);
+    font-size: 8px;
+    font-family: var(--mono);
+    letter-spacing: 1px;
+    margin-bottom: 5px;
+  }
+
+  .hcal-num {
+    color: #ccc;
+    font-size: 15px;
+    font-weight: 300;
+  }
+
+  .hcal-day.today {
+    background: rgba(0, 212, 170, 0.25);
+    border-color: var(--accent);
+  }
+
+  .hcal-day.today .hcal-num {
+    color: var(--accent-bright);
+    font-weight: bold;
+  }
+
+  .hcal-day.has-tasks::after {
+    content: '';
+    position: absolute;
+    bottom: 4px; left: 50%;
+    transform: translateX(-50%);
+    width: 3px; height: 3px;
+    background: var(--accent);
+    border-radius: 50%;
+    box-shadow: 0 0 4px var(--accent);
+  }
+
+  .hcal-mini {
+    margin-top: 12px;
+    border-top: 1px solid rgba(0, 212, 170, 0.15);
+    padding-top: 12px;
+    display: grid;
+    grid-template-columns: repeat(7, 1fr);
+    gap: 3px;
+  }
+
+  .hcal-mini-day {
+    color: var(--muted);
+    font-size: 9px;
+    text-align: center;
+    padding: 4px 0;
+    font-family: var(--mono);
+    cursor: pointer;
+    border-radius: 3px;
+    transition: all 0.15s;
+  }
+
+  .hcal-mini-day:hover {
+    color: var(--accent);
+    background: rgba(0, 212, 170, 0.1);
+  }
+
+  .hcal-mini-day.today {
+    color: var(--accent-bright);
+    font-weight: bold;
+  }
+
+  .hcal-mini-day.has-tasks { color: var(--accent); }
+  .hcal-mini-day.empty { opacity: 0.15; }
+
+  /* ---------- Screen Time ---------- */
+  .screen-time {
+    background: var(--panel-bg);
+    border-radius: 6px;
+    padding: 12px;
+    margin-bottom: 10px;
+    border-left: 2px solid var(--accent);
+  }
+
+  .screen-time.warn { border-left-color: var(--warn); }
+
+  .st-label {
+    color: var(--accent);
+    font-size: 10px;
+    font-family: var(--mono);
+    letter-spacing: 2px;
+    margin-bottom: 4px;
+  }
+
+  .screen-time.warn .st-label { color: var(--warn); }
+
+  .st-value {
+    color: var(--fg);
+    font-size: 20px;
+    font-family: var(--mono);
+    font-weight: 300;
+  }
+
+  /* ---------- Center Area ---------- */
+  .center-area {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 24px;
+  }
+
+  .orb-spiral {
+    width: 340px;
+    height: 340px;
+  }
+
+  .orb-spiral canvas {
+    width: 100%;
+    height: 100%;
+    filter: drop-shadow(0 0 30px rgba(0, 212, 170, 0.4));
+    transition: filter 0.3s;
+  }
+
+  .orb-spiral.reacting canvas {
+    filter: drop-shadow(0 0 70px rgba(0, 255, 204, 1));
+  }
+
+  .greeting {
+    color: var(--fg);
+    font-size: 16px;
+    font-weight: 300;
+    letter-spacing: 1px;
+    text-align: center;
+    text-shadow: 0 0 10px rgba(0, 212, 170, 0.4);
+    transition: all 0.3s;
+    min-height: 24px;
+  }
+
+  .greeting.reacting {
+    color: var(--accent-bright);
+    text-shadow: 0 0 20px rgba(0, 255, 204, 0.9);
+  }
+
+  .waveform {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 3px;
+    height: 50px;
+    width: 300px;
+  }
+
+  .waveform .bar {
+    width: 3px;
+    background: var(--accent);
+    border-radius: 2px;
+    box-shadow: 0 0 6px rgba(0, 212, 170, 0.4);
+    animation: waveBar 1.2s ease-in-out infinite;
+    transition: all 0.15s;
+  }
+
+  .waveform.reacting .bar {
+    background: var(--accent-bright);
+    box-shadow: 0 0 14px rgba(0, 255, 204, 0.9);
+  }
+
+  @keyframes waveBar {
+    0%, 100% { height: 6px; opacity: 0.4; }
+    50% { height: 34px; opacity: 1; }
+  }
+
+  /* ---------- Bottom Bar ---------- */
+  .bottom-bar {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    position: relative;
+  }
+
+  .status-label {
+    font-family: var(--mono);
+    font-size: 10px;
+    color: var(--muted);
+    letter-spacing: 2px;
+    text-transform: uppercase;
+  }
+
+  .status-label.active { color: var(--accent); }
+
+  /* ---------- Modal ---------- */
+  .modal-bg {
+    display: none;
+    position: fixed;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.85);
+    z-index: 100;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .modal-bg.active { display: flex; }
+
+  .modal {
+    background: #12121a;
+    border: 1px solid rgba(0, 212, 170, 0.4);
+    border-radius: 12px;
+    padding: 24px;
+    width: 420px;
+    max-width: 90vw;
+  }
+
+  .modal h3 {
+    color: var(--accent);
+    font-family: var(--mono);
+    font-size: 12px;
+    letter-spacing: 3px;
+    margin-bottom: 16px;
+  }
+
+  .modal input {
+    width: 100%;
+    background: var(--panel-bg);
+    border: 1px solid rgba(0, 212, 170, 0.3);
+    color: var(--fg);
+    padding: 10px 12px;
+    border-radius: 6px;
+    font-family: 'Segoe UI', sans-serif;
+    font-size: 13px;
+    margin-bottom: 12px;
+    outline: none;
+  }
+
+  .modal input:focus {
+    border-color: var(--accent);
+    box-shadow: 0 0 12px rgba(0, 212, 170, 0.3);
+  }
+
+  .modal-actions {
+    display: flex;
+    gap: 10px;
+    justify-content: flex-end;
+  }
+
+  .modal-actions button {
+    padding: 8px 18px;
+    border-radius: 6px;
+    cursor: pointer;
+    font-family: var(--mono);
+    font-size: 11px;
+    letter-spacing: 1px;
+    transition: all 0.2s;
+  }
+
+  .btn-cancel {
+    background: transparent;
+    border: 1px solid rgba(0, 212, 170, 0.3);
+    color: var(--muted);
+  }
+
+  .btn-cancel:hover {
+    color: #999;
+    border-color: var(--muted);
+  }
+
+  .btn-save {
+    background: rgba(0, 212, 170, 0.15);
+    border: 1px solid var(--accent);
+    color: var(--accent);
+  }
+
+  .btn-save:hover { background: rgba(0, 212, 170, 0.3); }
+</style>
 </head>
 <body>
-    <!-- ============================================================
-         APP LAYOUT STRUCTURE (Single-Page, Vanilla HTML)
-         This is a single-page application with NO framework (React,
-         Vue, etc.). Everything is plain HTML + CSS + JS. The layout
-         follows a vertical stack: orb (background) -> header ->
-         chat area -> input bar.
-         ============================================================ -->
 
-    <div class="app">
-        <!-- ORB-CONTAINER: A full-screen WebGL canvas that renders an
-             animated 3D orb as the background. It sits behind all other
-             content. The OrbRenderer class (from orb.js) initializes
-             and animates this. It's purely decorative—no interaction. -->
-        <div id="orb-container"></div>
+<div class="stage">
 
-        <!-- ============================================================
-             HEADER
-             Contains: logo/tagline, mode switch (General vs Realtime),
-             connection status badge, and new chat button.
-             ============================================================ -->
-        <header class="header glass-panel">
-            <div class="header-left">
-                <h1 class="logo">J.A.R.V.I.S</h1>
-                <span class="tagline">Just A Rather Very Intelligent System</span>
-            </div>
-            <div class="header-center">
-                <!-- MODE SWITCH: Toggle between "General" (text chat) and
-                     "Realtime" (voice/streaming). The .mode-slider div
-                     slides left/right via JavaScript to indicate the
-                     active mode. Both buttons share the same container
-                     so the slider can animate between them. -->
-                     <div class="mode-switch" id="mode-switch">
-                        <div class="mode-slider" id="mode-slider"></div>
-                    
-                        <button class="mode-btn active" data-mode="general" id="btn-general">
-                            <svg width="16" height="16" viewBox="0 0 24 24"
-                                 fill="none" stroke="currentColor"
-                                 stroke-width="2" stroke-linecap="round"
-                                 stroke-linejoin="round">
-                                <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>
-                            </svg>
-                            General
-                        </button>
-                    
-                        <button class="mode-btn" data-mode="realtime" id="btn-realtime">
-                            <svg width="16" height="16" viewBox="0 0 24 24"
-                                 fill="none" stroke="currentColor"
-                                 stroke-width="2" stroke-linecap="round"
-                                 stroke-linejoin="round">
-                                <circle cx="12" cy="12" r="10"/>
-                                <line x1="2" y1="12" x2="22" y2="12"/>
-                                <path d="M12 2a15.3 15.3 0 0 1 4 10
-                                         15.3 15.3 0 0 1-4 10
-                                         15.3 15.3 0 0 1-4-10
-                                         15.3 15.3 0 0 1 4-10z"/>
-                            </svg>
-                            Realtime
-                        </button>
-                    
-                        <button class="mode-btn" data-mode="agent" id="btn-agent">
-                            <svg width="16" height="16" viewBox="0 0 24 24"
-                                 fill="none" stroke="currentColor"
-                                 stroke-width="2" stroke-linecap="round"
-                                 stroke-linejoin="round">
-                                <path d="M12 2a10 10 0 1 0 10 10"/>
-                                <path d="M12 6v6l4 2"/>
-                                <path d="M16 3h5v5"/>
-                            </svg>
-                            Agent
-                        </button>
-                    </div>
-            </div>
-            <div class="header-right">
-                <!-- STATUS BADGE: Shows connection state (Online/Offline).
-                     The .status-dot is typically green when connected,
-                     red/gray when disconnected. Updated by script.js. -->
-                <div class="status-badge" id="status-badge">
-                    <span class="status-dot"></span>
-                    <span class="status-text">Online</span>
-                </div>
-                <!-- NEW CHAT: Clears the conversation and starts fresh. -->
-                <!-- SEARCH RESULTS: Toggle to show Tavily live search data (Realtime mode). -->
-                <button class="btn-icon search-results-toggle" id="search-results-toggle" title="View search results" style="display: none;">
-                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                        <circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/>
-                    </svg>
-                </button>
-                <button class="btn-icon new-chat-btn" id="new-chat-btn" title="New Chat">
-                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                        <line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/>
-                    </svg>
-                </button>
-            </div>
-        </header>
+  <!-- Top Bar -->
+  <div class="top-bar">
+    <div class="widget">
+      <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 3"/></svg>
+      <span class="time">--:--:--</span>
+    </div>
+    <div class="status-center">ONLINE</div>
+    <div class="widget">
+      <div class="battery-fill"><div class="battery-level" style="width:0%"></div></div>
+      <span class="battery-pct">--%</span>
+    </div>
+  </div>
 
-        <!-- ============================================================
-             CHAT AREA
-             Scrollable region containing the conversation. Shows a
-             welcome screen (with chips) when empty, or message bubbles
-             when there's history.
-             ============================================================ -->
-        <main class="chat-area" id="chat-area">
-            <div class="chat-messages" id="chat-messages">
-                <!-- WELCOME SCREEN: Shown when there are no messages.
-                     Chips are quick-action buttons that send preset
-                     prompts when clicked. The greeting text (e.g. "Good
-                     evening") can be time-based. -->
-                <div class="welcome-screen" id="welcome-screen">
-                    <div class="welcome-icon">
-                        <!-- Stacked layers icon: symbolizes AI/layers of intelligence -->
-                        <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
-                            <path d="M12 2L2 7l10 5 10-5-10-5z"/><path d="M2 17l10 5 10-5"/><path d="M2 12l10 5 10-5"/>
-                        </svg>
-                    </div>
-                    <h2 class="welcome-title" id="welcome-title">Good evening.</h2>
-                    <p class="welcome-sub">How may I assist you today?</p>
-                    <div class="welcome-chips">
-                        <button class="chip" data-msg="What can you do?">What can you do?</button>
-                        <button class="chip" data-msg="Open YouTube for me">Open YouTube</button>
-                        <button class="chip" data-msg="Tell me a fun fact">Fun fact</button>
-                        <button class="chip" data-msg="Play some music">Play music</button>
-                    </div>
-                </div>
-            </div>
-        </main>
+  <div class="main-grid">
 
-        <!-- ============================================================
-             INPUT BAR
-             Fixed at bottom. Contains: auto-resizing textarea, mic
-             (voice input), TTS (text-to-speech toggle), and send.
-             SVG icons use viewBox for scaling; stroke attributes
-             control line style. Multiple SVGs per button allow
-             different states (e.g. mic on vs off).
-             ============================================================ -->
-        <footer class="input-bar glass-panel">
-            <div class="input-wrapper">
-                <textarea id="message-input"
-                          placeholder="Ask Jarvis anything..."
-                          rows="1"
-                          maxlength="32000"></textarea>
-                <div class="input-actions">
-                    <!-- MIC BUTTON: Two SVG states. .mic-icon = outline
-                         (idle). .mic-icon-active = filled square (recording).
-                         CSS/JS toggles visibility based on state. -->
-                    <button class="action-btn mic-btn" id="mic-btn" title="Voice input">
-                        <!-- Microphone outline: mic body + stand -->
-                        <svg class="mic-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                            <path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/><line x1="12" y1="19" x2="12" y2="23"/><line x1="8" y1="23" x2="16" y2="23"/>
-                        </svg>
-                        <!-- Filled square: "stop recording" / active state -->
-                        <svg class="mic-icon-active" width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
-                            <rect x="4" y="4" width="16" height="16" rx="3"/>
-                        </svg>
-                    </button>
-                    <!-- TTS BUTTON: Text-to-speech. .tts-icon-off = speaker
-                         with X (disabled). .tts-icon-on = speaker with
-                         sound waves (enabled). -->
-                    <button class="action-btn tts-btn" id="tts-btn" title="Text to Speech">
-                        <!-- Speaker with X: TTS off -->
-                        <svg class="tts-icon-off" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                            <polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/>
-                            <line x1="23" y1="9" x2="17" y2="15"/><line x1="17" y1="9" x2="23" y2="15"/>
-                        </svg>
-                        <!-- Speaker with sound waves: TTS on -->
-                        <svg class="tts-icon-on" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                            <polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/>
-                            <path d="M15.54 8.46a5 5 0 0 1 0 7.07"/>
-                            <path d="M19.07 4.93a10 10 0 0 1 0 14.14"/>
-                        </svg>
-                    </button>
-                    <!-- SEND BUTTON: Paper plane / send icon -->
-                    <button class="action-btn send-btn" id="send-btn">
-                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                            <line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/>
-                        </svg>
-                    </button>
-                </div>
-            </div>
-            <div class="input-meta">
-                <span class="mode-label" id="mode-label">General Mode</span>
-                <span class="char-count" id="char-count"></span>
-            </div>
-        </footer>
+    <!-- Left Panel: Recon + Calendar (MOVED HERE) -->
+    <div class="side-panel">
+      <div class="panel-tabs">
+        <button class="ptab active" data-tab="nmap">NMAP</button>
+        <button class="ptab" data-tab="wifi">WIFI</button>
+        <button class="ptab" data-tab="bt">BT</button>
+        <button class="ptab" data-tab="net">NET</button>
+      </div>
 
-        <!-- ============================================================
-             SEARCH RESULTS WIDGET (Realtime mode)
-             Fixed panel on the right showing Tavily search data: query,
-             AI-synthesized answer, and source list. Toggle via header button.
-             ============================================================ -->
-        <aside class="search-results-widget glass-panel" id="search-results-widget" aria-hidden="true">
-            <div class="search-results-header">
-                <h3 class="search-results-title">Live search</h3>
-                <button class="search-results-close" id="search-results-close" title="Close" aria-label="Close search results">
-                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
-                </button>
-            </div>
-            <div class="search-results-query" id="search-results-query"></div>
-            <div class="search-results-answer" id="search-results-answer"></div>
-            <div class="search-results-list" id="search-results-list"></div>
-        </aside>
+      <div id="tab-nmap" class="tab-content active">
+        <div class="scan-status" id="scanStatus">
+          <div class="scan-pulse"></div>
+          <span id="scanText">SCANNING...</span>
+        </div>
+        <div id="scanList"></div>
+      </div>
+
+      <div id="tab-wifi" class="tab-content"><div id="wifiList"></div></div>
+      <div id="tab-bt" class="tab-content"><div id="btList"></div></div>
+      <div id="tab-net" class="tab-content"><div id="netList"></div></div>
+
+      <!-- CALENDAR — now in the LEFT panel -->
+      <div class="hcal">
+        <div class="hcal-head">
+          <div class="hcal-month" id="hcalMonth"></div>
+          <div class="hcal-sub">WEEK VIEW</div>
+        </div>
+        <div class="hcal-strip" id="hcalStrip"></div>
+        <div class="hcal-mini" id="hcalMini"></div>
+      </div>
     </div>
 
-    <!-- ============================================================
-         SCRIPT LOADING ORDER
-         orb.js MUST load first: it defines OrbRenderer and sets up
-         the WebGL canvas in #orb-container. script.js depends on it
-         and uses the orb for the background. Order matters because
-         script.js may reference OrbRenderer at load time.
-         ============================================================ -->
-    <script src="orb.js"></script>
-    <script src="script.js?v=999"></script>
+    <!-- Center -->
+    <div class="center-area">
+      <div class="orb-spiral" id="orb1"><canvas id="c1"></canvas></div>
+      <div class="greeting" id="greet1">Bolo Sirr, kya karna hai?</div>
+      <div class="waveform" id="w1"></div>
+    </div>
+
+    <!-- Right Panel: Screen Time + Habits + Goals -->
+    <div class="side-panel right">
+      <div class="panel-title">SCREEN TIME</div>
+      <div class="screen-time">
+        <div class="st-label">TODAY</div>
+        <div class="st-value" id="stToday">0h 0m</div>
+      </div>
+      <div class="screen-time warn">
+        <div class="st-label">THIS WEEK</div>
+        <div class="st-value" id="stWeek">0h 0m</div>
+      </div>
+
+      <div class="panel-title" style="margin-top:20px;">
+        HABITS
+        <button class="add-btn" id="addHabitBtn">+</button>
+      </div>
+      <div id="habitsList"></div>
+
+      <div class="panel-title" style="margin-top:20px;">
+        GOALS
+        <button class="add-btn" id="addGoalBtn">+</button>
+      </div>
+      <div id="goalsList"></div>
+    </div>
+
+  </div>
+
+  <div class="bottom-bar">
+    <div class="status-label" id="statusLabel">STARTING...</div>
+  </div>
+</div>
+
+<!-- Modal -->
+<div class="modal-bg" id="modalBg">
+  <div class="modal">
+    <h3 id="modalTitle">EDIT</h3>
+    <input type="text" id="modalInput1" placeholder="Text..." />
+    <input type="text" id="modalInput2" placeholder="Meta (optional)..." />
+    <div class="modal-actions">
+      <button class="btn-cancel" id="modalCancel">CANCEL</button>
+      <button class="btn-save" id="modalSave">SAVE</button>
+    </div>
+  </div>
+</div>
+
+<script>
+/* ============================================================
+   CONFIG
+   ============================================================ */
+   const API = 'https://127.0.0.1:8000';
+
+const GREETINGS = {
+  ready:     'Bolo Sirr, kya karna hai?',
+  listening: 'Haan Sirr, sun raha hoon...',
+  thinking:  'Ek second Sirr...',
+  tts:       'Namaste Sirr. Main Leo hoon. Bolo, kya karna hai?',
+  error:     'Backend nahi mila Sirr.',
+};
+
+const STORAGE_KEYS = {
+  habits:     'leo_habits',
+  goals:      'leo_goals',
+  calTasks:   'leo_cal_tasks',
+  screenTime: 'leo_screen_time',
+};
+
+const WEEKDAYS = ['SUN', 'MON', 'TUE', 'WED', 'THU', 'FRI', 'SAT'];
+const MONTHS = ['JANUARY','FEBRUARY','MARCH','APRIL','MAY','JUNE','JULY',
+                'AUGUST','SEPTEMBER','OCTOBER','NOVEMBER','DECEMBER'];
+
+const DEFAULTS = {
+  habits: [
+    { text: 'Woke up at 6:30 AM',    type: 'success', icon: '✓', meta: 'today' },
+    { text: 'Scrolled 45 min on IG', type: 'fail',    icon: '✗', meta: 'today' },
+    { text: 'Study for 2 hours',     type: 'pending', icon: '○', meta: 'pending' },
+  ],
+  goals: [
+    { text: 'Build Leo v1',            type: 'success', icon: '✓', meta: '26 Sep 2026' },
+    { text: 'Build Leo v2 with voice', type: 'pending', icon: '○', meta: 'this week' },
+    { text: 'Complete Physics ch 5',   type: 'pending', icon: '○', meta: '3 days left' },
+  ],
+};
+
+/* ============================================================
+   STORAGE
+   ============================================================ */
+function loadData(key, fallback) {
+  try {
+    const raw = localStorage.getItem(key);
+    return raw ? JSON.parse(raw) : fallback;
+  } catch {
+    return fallback;
+  }
+}
+
+function saveData(key, data) {
+  try { localStorage.setItem(key, JSON.stringify(data)); } catch {}
+}
+
+/* ============================================================
+   STATE
+   ============================================================ */
+let habits   = loadData(STORAGE_KEYS.habits,   DEFAULTS.habits);
+let goals    = loadData(STORAGE_KEYS.goals,    DEFAULTS.goals);
+let calTasks = loadData(STORAGE_KEYS.calTasks, {}); // { 'YYYY-MM-DD': ['task', ...] }
+
+let sessionId = null;
+
+/* ============================================================
+   HABITS & GOALS
+   ============================================================ */
+function renderList(containerId, items, storeKey, onEdit) {
+  const container = document.getElementById(containerId);
+  container.innerHTML = '';
+
+  items.forEach((item, index) => {
+    const row = document.createElement('div');
+    row.className = `panel-item ${item.type}`;
+    row.innerHTML = `
+      <span class="icon">${item.icon}</span>
+      <div style="flex:1">
+        <div class="text">${escapeHtml(item.text)}</div>
+        ${item.meta ? `<div class="meta">${escapeHtml(item.meta)}</div>` : ''}
+      </div>
+      <button class="del-btn" title="Delete">×</button>
+    `;
+
+    row.querySelector('.del-btn').addEventListener('click', (e) => {
+      e.stopPropagation();
+      items.splice(index, 1);
+      saveData(storeKey, items);
+      renderList(containerId, items, storeKey, onEdit);
+    });
+
+    row.addEventListener('click', () => onEdit(index));
+    container.appendChild(row);
+  });
+}
+
+function renderHabits() {
+  renderList('habitsList', habits, STORAGE_KEYS.habits, (i) => editItem('habit', i));
+}
+
+function renderGoals() {
+  renderList('goalsList', goals, STORAGE_KEYS.goals, (i) => editItem('goal', i));
+}
+
+function escapeHtml(str) {
+  return String(str).replace(/[&<>"']/g, (c) => ({
+    '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;',
+  }[c]));
+}
+
+/* ============================================================
+   CALENDAR
+   ============================================================ */
+const today = new Date();
+const currentYear  = today.getFullYear();
+const currentMonth = today.getMonth();
+
+function dateKey(d) {
+  const y = d.getFullYear();
+  const m = String(d.getMonth() + 1).padStart(2, '0');
+  const day = String(d.getDate()).padStart(2, '0');
+  return `${y}-${m}-${day}`;
+}
+
+function renderCalendar() {
+  const monthEl = document.getElementById('hcalMonth');
+  monthEl.textContent = `${MONTHS[currentMonth]} · ${currentYear}`;
+
+  renderWeekStrip();
+  renderMonthGrid();
+}
+
+function renderWeekStrip() {
+  const strip = document.getElementById('hcalStrip');
+  strip.innerHTML = '';
+
+  const startOfWeek = new Date(today);
+  startOfWeek.setDate(today.getDate() - today.getDay());
+
+  for (let i = 0; i < 7; i++) {
+    const d = new Date(startOfWeek);
+    d.setDate(startOfWeek.getDate() + i);
+
+    const key = dateKey(d);
+    const isToday = d.toDateString() === today.toDateString();
+    const hasTasks = (calTasks[key] || []).length > 0;
+
+    const cell = document.createElement('div');
+    cell.className = 'hcal-day';
+    if (isToday)  cell.classList.add('today');
+    if (hasTasks) cell.classList.add('has-tasks');
+
+    cell.innerHTML = `
+      <div class="hcal-wd">${WEEKDAYS[d.getDay()]}</div>
+      <div class="hcal-num">${d.getDate()}</div>
+    `;
+    cell.addEventListener('click', () => editCalendarDay(key));
+    strip.appendChild(cell);
+  }
+}
+
+function renderMonthGrid() {
+  const mini = document.getElementById('hcalMini');
+  mini.innerHTML = '';
+
+  const firstDay = new Date(currentYear, currentMonth, 1).getDay();
+  const daysInMonth = new Date(currentYear, currentMonth + 1, 0).getDate();
+
+  // Leading empty cells
+  for (let i = 0; i < firstDay; i++) {
+    const blank = document.createElement('div');
+    blank.className = 'hcal-mini-day empty';
+    mini.appendChild(blank);
+  }
+
+  for (let day = 1; day <= daysInMonth; day++) {
+    const d = new Date(currentYear, currentMonth, day);
+    const key = dateKey(d);
+    const isToday = day === today.getDate();
+    const hasTasks = (calTasks[key] || []).length > 0;
+
+    const cell = document.createElement('div');
+    cell.className = 'hcal-mini-day';
+    cell.textContent = day;
+    if (isToday)  cell.classList.add('today');
+    if (hasTasks) {
+      cell.classList.add('has-tasks');
+      cell.title = calTasks[key].join(', ');
+    }
+    cell.addEventListener('click', () => editCalendarDay(key));
+    mini.appendChild(cell);
+  }
+}
+
+function editCalendarDay(dateStr) {
+  const tasks = calTasks[dateStr] || [];
+  openModal({
+    title: `EDIT ${dateStr}`,
+    value1: tasks.join(', '),
+    value2: '',
+    placeholder1: 'Tasks (comma separated)',
+    placeholder2: '',
+    onSave: (text) => {
+      const parsed = text ? text.split(',').map((s) => s.trim()).filter(Boolean) : [];
+      if (parsed.length) calTasks[dateStr] = parsed;
+      else delete calTasks[dateStr];
+      saveData(STORAGE_KEYS.calTasks, calTasks);
+      renderCalendar();
+    },
+  });
+}
+
+/* ============================================================
+   MODAL
+   ============================================================ */
+const modalBg     = document.getElementById('modalBg');
+const modalTitle  = document.getElementById('modalTitle');
+const modalInput1 = document.getElementById('modalInput1');
+const modalInput2 = document.getElementById('modalInput2');
+let modalCallback = null;
+
+function openModal({ title, value1 = '', value2 = '', placeholder1 = 'Text...', placeholder2 = 'Meta...', onSave }) {
+  modalTitle.textContent = title;
+  modalInput1.value = value1;
+  modalInput2.value = value2;
+  modalInput1.placeholder = placeholder1;
+  modalInput2.placeholder = placeholder2;
+  modalCallback = onSave;
+  modalBg.classList.add('active');
+  modalInput1.focus();
+}
+
+function closeModal() {
+  modalBg.classList.remove('active');
+  modalCallback = null;
+}
+
+document.getElementById('modalCancel').addEventListener('click', closeModal);
+document.getElementById('modalSave').addEventListener('click', () => {
+  if (modalCallback) modalCallback(modalInput1.value.trim(), modalInput2.value.trim());
+  closeModal();
+});
+[modalInput1, modalInput2].forEach((input) => {
+  input.addEventListener('keydown', (e) => {
+    if (e.key === 'Enter') document.getElementById('modalSave').click();
+  });
+});
+
+function editItem(kind, index) {
+  const list = kind === 'habit' ? habits : goals;
+  const item = list[index];
+  if (!item) return;
+
+  openModal({
+    title: `EDIT ${kind.toUpperCase()}`,
+    value1: item.text,
+    value2: item.meta || '',
+    placeholder1: 'Task...',
+    placeholder2: 'Meta (optional)',
+    onSave: (text, meta) => {
+      if (!text) return;
+      item.text = text;
+      item.meta = meta;
+      saveData(kind === 'habit' ? STORAGE_KEYS.habits : STORAGE_KEYS.goals, list);
+      kind === 'habit' ? renderHabits() : renderGoals();
+    },
+  });
+}
+
+document.getElementById('addHabitBtn').addEventListener('click', () => {
+  openModal({
+    title: 'ADD HABIT',
+    placeholder1: 'Habit...',
+    placeholder2: 'Meta (optional)',
+    onSave: (text, meta) => {
+      if (!text) return;
+      habits.push({ text, type: 'pending', icon: '○', meta: meta || 'new' });
+      saveData(STORAGE_KEYS.habits, habits);
+      renderHabits();
+    },
+  });
+});
+
+document.getElementById('addGoalBtn').addEventListener('click', () => {
+  openModal({
+    title: 'ADD GOAL',
+    placeholder1: 'Goal...',
+    placeholder2: 'Deadline (optional)',
+    onSave: (text, meta) => {
+      if (!text) return;
+      goals.push({ text, type: 'pending', icon: '○', meta: meta || 'new' });
+      saveData(STORAGE_KEYS.goals, goals);
+      renderGoals();
+    },
+  });
+});
+
+/* ============================================================
+   REACTION STATE
+   ============================================================ */
+const reaction = { orb: 0 };
+
+function triggerReaction(duration = 2000) {
+  const start = performance.now();
+
+  function tick() {
+    const elapsed = performance.now() - start;
+    if (elapsed < duration) {
+      reaction.orb = 1 - (elapsed / duration);
+      requestAnimationFrame(tick);
+    } else {
+      reaction.orb = 0;
+    }
+  }
+  tick();
+
+  ['orb1', 'w1', 'greet1'].forEach((id) =>
+    document.getElementById(id).classList.add('reacting')
+  );
+
+  setTimeout(() => {
+    ['orb1', 'w1', 'greet1'].forEach((id) =>
+      document.getElementById(id).classList.remove('reacting')
+    );
+  }, duration);
+}
+
+function setGreeting(text) {
+  document.getElementById('greet1').textContent = text;
+}
+
+function setStatus(text, active) {
+  const el = document.getElementById('statusLabel');
+  el.textContent = text;
+  el.classList.toggle('active', !!active);
+}
+
+/* ============================================================
+   TEXT-TO-SPEECH
+   ============================================================ */
+let ttsAudio = null;
+let ttsPlaying = false;
+
+async function playTTS(text) {
+  if (!text || !text.trim()) return;
+
+  try {
+    const res = await fetch(`${API}/tts`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ text: text.slice(0, 500) }),
+    });
+    if (!res.ok) return;
+
+    const data = await res.json();
+    if (!data.audio) return;
+
+    if (ttsAudio) { ttsAudio.pause(); ttsAudio = null; }
+
+    ttsAudio = new Audio('data:audio/mpeg;base64,' + data.audio);
+
+    await new Promise((resolve) => {
+      ttsPlaying = true;
+      const done = () => { ttsPlaying = false; resolve(); };
+      ttsAudio.onended = done;
+      ttsAudio.onerror = done;
+      ttsAudio.play().catch(done);
+    });
+  } catch {
+    ttsPlaying = false;
+  }
+}
+
+/* ============================================================
+   SPEECH RECOGNITION
+   ============================================================ */
+const SpeechRecognitionImpl = window.SpeechRecognition || window.webkitSpeechRecognition;
+let recognition = null;
+let shouldRestart = true;
+
+function initRecognition() {
+  if (!SpeechRecognitionImpl) {
+    setStatus('SPEECH NOT SUPPORTED', false);
+    return null;
+  }
+
+  const rec = new SpeechRecognitionImpl();
+  rec.continuous = true;
+  rec.interimResults = true;
+  rec.lang = 'en-IN';
+
+  rec.onstart = () => setStatus('LISTENING', true);
+
+  rec.onend = () => {
+    if (shouldRestart) {
+      setTimeout(() => {
+        try { rec.start(); } catch {}
+      }, 500);
+    }
+  };
+
+  rec.onerror = (e) => {
+    if (e.error === 'not-allowed') {
+      shouldRestart = false;
+      setStatus('MIC DENIED', false);
+    }
+  };
+
+  rec.onresult = (event) => {
+    if (ttsPlaying) return;
+
+    let finalText = '';
+    for (let i = event.resultIndex; i < event.results.length; i++) {
+      if (event.results[i].isFinal) finalText += event.results[i][0].transcript;
+    }
+    if (!finalText.trim()) return;
+
+    const lower = finalText.trim().toLowerCase();
+    if (!lower.includes('leo')) return;
+
+    const command = finalText.trim()
+      .replace(/leo/gi, '')
+      .replace(/^[,\s.]+/, '')
+      .trim();
+
+    if (command.length > 2) {
+      handleCommand(command);
+    } else {
+      setGreeting(GREETINGS.listening);
+      triggerReaction(2000);
+      playTTS('Haan Sirr, bolo.');
+    }
+  };
+
+  return rec;
+}
+
+function startRecognition() {
+  if (!recognition) recognition = initRecognition();
+  if (!recognition) return;
+  try { recognition.start(); } catch {}
+}
+
+/* ============================================================
+   COMMAND HANDLING
+   ============================================================ */
+async function handleCommand(text) {
+  setGreeting(GREETINGS.thinking);
+  setStatus('PROCESSING', true);
+  triggerReaction(2500);
+
+  try {
+    const res = await fetch(`${API}/chat`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ message: text, session_id: sessionId }),
+    });
+    if (!res.ok) throw new Error(res.status);
+
+    const data = await res.json();
+    sessionId = data.session_id;
+
+    const reply = data.response || 'Kuch samajh nahi aaya Sirr.';
+    setGreeting(reply.length > 80 ? reply.slice(0, 80) + '...' : reply);
+
+    await playTTS(reply);
+
+    setGreeting(GREETINGS.ready);
+    setStatus('LISTENING', true);
+  } catch {
+    setGreeting(GREETINGS.error);
+    playTTS('Backend nahi mil raha Sirr.');
+  }
+}
+
+/* ============================================================
+   STARTUP
+   ============================================================ */
+async function startup() {
+  setGreeting('Loading...');
+  setStatus('STARTING', false);
+
+  setTimeout(async () => {
+    triggerReaction(3000);
+    await playTTS(GREETINGS.tts);
+    setGreeting(GREETINGS.ready);
+    setStatus('LISTENING', true);
+    startRecognition();
+  }, 2000);
+}
+
+/* ============================================================
+   CLOCK & BATTERY
+   ============================================================ */
+function updateClock() {
+  const now = new Date();
+  const hh = String(now.getHours()).padStart(2, '0');
+  const mm = String(now.getMinutes()).padStart(2, '0');
+  const ss = String(now.getSeconds()).padStart(2, '0');
+  document.querySelectorAll('.time').forEach((el) => {
+    el.textContent = `${hh}:${mm}:${ss}`;
+  });
+}
+
+function initBattery() {
+  if (!navigator.getBattery) return;
+  navigator.getBattery().then((battery) => {
+    const update = () => {
+      const pct = Math.round(battery.level * 100);
+      document.querySelectorAll('.battery-level').forEach((el) => el.style.width = pct + '%');
+      document.querySelectorAll('.battery-pct').forEach((el) => el.textContent = pct + '%');
+    };
+    update();
+    battery.addEventListener('levelchange', update);
+  });
+}
+
+/* ============================================================
+   SCREEN TIME
+   ============================================================ */
+function getScreenTime() {
+  return loadData(STORAGE_KEYS.screenTime, { days: {} });
+}
+
+function todayKey() {
+  return dateKey(new Date());
+}
+
+function updateScreenTime() {
+  const data = getScreenTime();
+  const key = todayKey();
+  data.days[key] = (data.days[key] || 0) + 5;
+  saveData(STORAGE_KEYS.screenTime, data);
+
+  const todaySec = data.days[key];
+  document.getElementById('stToday').textContent = formatDuration(todaySec);
+
+  const weekSec = Object.entries(data.days)
+    .filter(([k]) => (Date.now() - new Date(k).getTime()) / 86400000 <= 7)
+    .reduce((sum, [, v]) => sum + v, 0);
+  document.getElementById('stWeek').textContent = formatDuration(weekSec);
+}
+
+function formatDuration(seconds) {
+  const h = Math.floor(seconds / 3600);
+  const m = Math.floor((seconds % 3600) / 60);
+  return `${h}h ${m}m`;
+}
+
+/* ============================================================
+   RECON TABS
+   ============================================================ */
+function switchTab(tabName) {
+  document.querySelectorAll('.ptab').forEach((t) => t.classList.remove('active'));
+  document.querySelectorAll('.tab-content').forEach((c) => c.classList.remove('active'));
+
+  const tab = document.querySelector(`.ptab[data-tab="${tabName}"]`);
+  const content = document.getElementById('tab-' + tabName);
+  if (tab) tab.classList.add('active');
+  if (content) content.classList.add('active');
+
+  const fetchers = {
+    nmap: fetchNmap,
+    wifi: fetchWifi,
+    bt:   fetchBT,
+    net:  fetchNet,
+  };
+  if (fetchers[tabName]) fetchers[tabName]();
+}
+
+document.querySelectorAll('.ptab').forEach((tab) => {
+  tab.addEventListener('click', () => switchTab(tab.dataset.tab));
+});
+
+function renderLoading(containerId, text) {
+  const el = document.getElementById(containerId);
+  el.innerHTML = `<div class="panel-item"><span class="icon">...</span><div><div class="text">${text}</div></div></div>`;
+}
+
+function renderEmpty(containerId, text) {
+  const el = document.getElementById(containerId);
+  el.innerHTML = `<div class="panel-item pending"><span class="icon">?</span><div><div class="text">${text}</div></div></div>`;
+}
+
+function renderItems(containerId, items, iconFn, textFn, metaFn) {
+  const el = document.getElementById(containerId);
+  el.innerHTML = '';
+  items.forEach((item) => {
+    const row = document.createElement('div');
+    row.className = 'panel-item success';
+    row.innerHTML = `
+      <span class="icon">${iconFn(item)}</span>
+      <div>
+        <div class="text">${escapeHtml(textFn(item))}</div>
+        <div class="meta">${escapeHtml(metaFn(item))}</div>
+      </div>
+    `;
+    el.appendChild(row);
+  });
+}
+
+async function fetchNmap() {
+  const status = document.getElementById('scanStatus');
+  const text = document.getElementById('scanText');
+
+  try {
+    const res = await fetch(`${API}/recon/devices`, { signal: AbortSignal.timeout(15000) });
+    if (!res.ok) throw new Error(res.status);
+
+    const data = await res.json();
+    const devices = data.devices || [];
+
+    const suspicious = devices.some((d) =>
+      d.ip && !d.ip.startsWith('192.168.') && !d.ip.startsWith('10.')
+    );
+
+    status.classList.toggle('warn', suspicious);
+    text.textContent = suspicious ? 'SUSPICIOUS ACTIVITY DETECTED' : 'NO SUSPICIOUS ACTIVITY';
+
+    if (!devices.length) {
+      renderEmpty('scanList', 'No devices');
+      return;
+    }
+
+    renderItems(
+      'scanList',
+      devices,
+      () => '✓',
+      (d) => d.ip,
+      (d) => `${d.mac} · ${d.type}`
+    );
+  } catch {
+    status.classList.remove('warn');
+    text.textContent = 'NMAP OFFLINE';
+    renderEmpty('scanList', 'Backend offline');
+  }
+}
+
+async function fetchWifi() {
+  renderLoading('wifiList', 'Scanning...');
+  try {
+    const res = await fetch(`${API}/recon/wifi`, { signal: AbortSignal.timeout(20000) });
+    if (!res.ok) throw new Error(res.status);
+
+    const networks = (await res.json()).networks || [];
+    if (!networks.length) {
+      renderEmpty('wifiList', 'No WiFi');
+      return;
+    }
+    renderItems(
+      'wifiList',
+      networks,
+      () => '📶',
+      (n) => n.ssid,
+      (n) => `${n.auth || 'open'} · ${n.signal || '?'}`
+    );
+  } catch {
+    renderEmpty('wifiList', 'WiFi offline');
+  }
+}
+
+async function fetchBT() {
+  renderLoading('btList', 'Scanning...');
+  try {
+    const res = await fetch(`${API}/recon/bluetooth`, { signal: AbortSignal.timeout(25000) });
+    if (!res.ok) throw new Error(res.status);
+
+    const devices = (await res.json()).devices || [];
+    if (!devices.length) {
+      renderEmpty('btList', 'No devices');
+      return;
+    }
+    renderItems(
+      'btList',
+      devices,
+      () => '🔵',
+      (d) => d.name,
+      (d) => (d.id || '').slice(0, 40)
+    );
+  } catch {
+    renderEmpty('btList', 'BT offline');
+  }
+}
+
+async function fetchNet() {
+  renderLoading('netList', 'Fetching...');
+  try {
+    const res = await fetch(`${API}/recon/network`, { signal: AbortSignal.timeout(15000) });
+    if (!res.ok) throw new Error(res.status);
+
+    const data = await res.json();
+    const rows = [
+      ['Local IP', data.local_ip],
+      ['Public IP', data.public_ip],
+      ['City', data.city],
+      ['Region', data.region],
+      ['Country', data.country],
+      ['ISP', data.isp],
+    ].filter(([, v]) => v);
+
+    const el = document.getElementById('netList');
+    el.innerHTML = '';
+    rows.forEach(([k, v]) => {
+      const row = document.createElement('div');
+      row.className = 'panel-item success';
+      row.innerHTML = `<span class="icon">•</span><div><div class="text">${escapeHtml(k)}: ${escapeHtml(v)}</div></div>`;
+      el.appendChild(row);
+    });
+  } catch {
+    renderEmpty('netList', 'Net offline');
+  }
+}
+
+/* ============================================================
+   WAVEFORM
+   ============================================================ */
+function buildWaveform(containerId, barCount = 40) {
+  const container = document.getElementById(containerId);
+  for (let i = 0; i < barCount; i++) {
+    const bar = document.createElement('div');
+    bar.className = 'bar';
+    bar.style.animationDelay = (i * 0.05) + 's';
+    bar.style.animationDuration = (0.8 + Math.random() * 0.8) + 's';
+    container.appendChild(bar);
+  }
+}
+
+/* ============================================================
+   SPIRAL VORTEX
+   ============================================================ */
+function initSpiralVortex(canvasId) {
+  const canvas = document.getElementById(canvasId);
+  const ctx = canvas.getContext('2d');
+  const SIZE = 340;
+  const CENTER = SIZE / 2;
+  const MAX_RADIUS = 155;
+
+  canvas.width = SIZE;
+  canvas.height = SIZE;
+
+  const particles = [];
+  for (let i = 0; i < 350; i++) {
+    particles.push({
+      angle: Math.random() * Math.PI * 2,
+      radius: Math.random() * 140 + 15,
+      speed: 0.015 + Math.random() * 0.015,
+      size: Math.random() * 1.8 + 0.4,
+      jitter: Math.random() * Math.PI * 2,
+    });
+  }
+
+  let time = 0;
+
+  function draw() {
+    ctx.clearRect(0, 0, SIZE, SIZE);
+
+    const r = reaction.orb || 0;
+    const coreRadius = 75 + r * 35;
+
+    // Glowing core
+    const gradient = ctx.createRadialGradient(CENTER, CENTER, 0, CENTER, CENTER, coreRadius);
+    gradient.addColorStop(0, `rgba(0, 255, 204, ${0.55 + r * 0.45})`);
+    gradient.addColorStop(0.5, `rgba(0, 212, 170, ${0.15 + r * 0.3})`);
+    gradient.addColorStop(1, 'rgba(0, 212, 170, 0)');
+    ctx.fillStyle = gradient;
+    ctx.beginPath();
+    ctx.arc(CENTER, CENTER, coreRadius, 0, Math.PI * 2);
+    ctx.fill();
+
+    // Particles
+    const speedMult = 1 + r * 4;
+    particles.forEach((p) => {
+      p.angle += p.speed * speedMult;
+      p.radius -= (0.4 + r * 1.5);
+      if (p.radius < 8) p.radius = MAX_RADIUS;
+
+      const jitterOffset = r * Math.sin(time * 8 + p.jitter) * 5;
+      const x = CENTER + Math.cos(p.angle) * (p.radius + jitterOffset);
+      const y = CENTER + Math.sin(p.angle) * (p.radius + jitterOffset);
+
+      const alpha = (p.radius / MAX_RADIUS) * (0.7 + r * 0.3);
+      ctx.fillStyle = `rgba(0, 255, 204, ${alpha})`;
+      ctx.beginPath();
+      ctx.arc(x, y, p.size * (1 + r * 0.5), 0, Math.PI * 2);
+      ctx.fill();
+    });
+
+    time += 1;
+    requestAnimationFrame(draw);
+  }
+
+  draw();
+}
+
+/* ============================================================
+   INIT
+   ============================================================ */
+function init() {
+  // Render UI
+  renderHabits();
+  renderGoals();
+  renderCalendar();
+  buildWaveform('w1', 40);
+  initSpiralVortex('c1');
+
+  // Clock & battery
+  updateClock();
+  setInterval(updateClock, 1000);
+  initBattery();
+
+  // Screen time tracking
+  updateScreenTime();
+  setInterval(updateScreenTime, 5000);
+
+  // Periodic nmap refresh
+  fetchNmap();
+  setInterval(fetchNmap, 60000);
+
+  // Start assistant
+  startup();
+
+  // Unlock audio on first interaction (browser autoplay policy)
+  document.body.addEventListener('click', function unlock() {
+    if (ttsAudio) return;
+    const silent = new Audio();
+    silent.play().catch(() => {});
+    document.body.removeEventListener('click', unlock);
+  }, { once: true });
+}
+
+init();
+</script>
+
 </body>
 </html>

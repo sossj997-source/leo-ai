@@ -1,5 +1,6 @@
 # app/main.py
 from fastapi import Request
+from pydantic import BaseModel
 import time
 import uuid
 import logging
@@ -316,7 +317,58 @@ async def list_writing():
         raise HTTPException(status_code=503, detail="Writing service not ready")
     return {"files": writing_service.list_outputs()}
 
+# ==================================================
+# TTS — Edge TTS (Hindi male voice)
+# ==================================================
+class TTSRequest(BaseModel):
+    text: str
+    voice: Optional[str] = None
 
+
+@app.post("/tts")
+async def tts_endpoint(req: TTSRequest):
+    from app.services.tts_service import EdgeTTSService
+
+    text = (req.text or "").strip()
+    if not text:
+        raise HTTPException(status_code=400, detail="No text")
+
+    voice = req.voice or "hi-IN-MadhurNeural"
+
+    tts = EdgeTTSService(voice=voice)
+    audio_b64 = tts.text_to_speech(text[:500])
+
+    if not audio_b64:
+        raise HTTPException(status_code=500, detail="TTS failed")
+
+    return {"audio": audio_b64, "format": "mp3", "voice": voice}
+
+
+# ==================================================
+# RECON — surrounding info
+# ==================================================
+@app.get("/recon/wifi")
+async def recon_wifi():
+    from app.recon import get_wifi_networks
+    return {"networks": get_wifi_networks()}
+
+
+@app.get("/recon/devices")
+async def recon_devices():
+    from app.recon import get_lan_devices
+    return {"devices": get_lan_devices()}
+
+
+@app.get("/recon/network")
+async def recon_network():
+    from app.recon import get_network_info
+    return get_network_info()
+
+
+@app.get("/recon/bluetooth")
+async def recon_bluetooth():
+    from app.recon import get_bluetooth_devices
+    return {"devices": get_bluetooth_devices()}
 # ==================================================
 # RUN
 # ==================================================
