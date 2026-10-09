@@ -369,6 +369,28 @@ async def recon_network():
 async def recon_bluetooth():
     from app.recon import get_bluetooth_devices
     return {"devices": get_bluetooth_devices()}
+
+# ==================================================
+# FRONTEND — serve static files
+# ==================================================
+from fastapi.staticfiles import StaticFiles
+from fastapi.responses import FileResponse
+
+FRONTEND_DIR = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "frontend")
+
+if os.path.exists(FRONTEND_DIR):
+    @app.get("/", include_in_schema=False)
+    async def serve_frontend():
+        return FileResponse(os.path.join(FRONTEND_DIR, "index.html"))
+
+    @app.get("/index.html", include_in_schema=False)
+    async def serve_index():
+        return FileResponse(os.path.join(FRONTEND_DIR, "index.html"))
+
+    app.mount("/static", StaticFiles(directory=FRONTEND_DIR), name="static")
+    print(f"FRONTEND SERVED FROM: {FRONTEND_DIR}")
+else:
+    print(f"FRONTEND DIR NOT FOUND: {FRONTEND_DIR}")
 # ==================================================
 # RUN
 # ==================================================

@@ -726,7 +726,7 @@
 /* ============================================================
    CONFIG
    ============================================================ */
-   const API = 'https://127.0.0.1:8000';
+   const API = 'https://leo-ai-fb31.onrender.com';
 
 const GREETINGS = {
   ready:     'Bolo Sirr, kya karna hai?',
@@ -1066,30 +1066,49 @@ let ttsPlaying = false;
 async function playTTS(text) {
   if (!text || !text.trim()) return;
 
-  try {
-    const res = await fetch(`${API}/tts`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ text: text.slice(0, 500) }),
-    });
-    if (!res.ok) return;
+  // Chunks mein todo — 400 chars each
+  const chunks = [];
+  let current = '';
+  const sentences = text.split(/(?<=[.!?।\n])\s+/);
 
-    const data = await res.json();
-    if (!data.audio) return;
+  for (const sentence of sentences) {
+    if ((current + sentence).length > 400) {
+      if (current) chunks.push(current.trim());
+      current = sentence;
+    } else {
+      current += ' ' + sentence;
+    }
+  }
+  if (current.trim()) chunks.push(current.trim());
 
-    if (ttsAudio) { ttsAudio.pause(); ttsAudio = null; }
+  // Har chunk play karo — sequence mein
+  for (const chunk of chunks) {
+    if (!chunk.trim()) continue;
+    try {
+      const res = await fetch(`${API}/tts`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ text: chunk }),
+      });
+      if (!res.ok) continue;
 
-    ttsAudio = new Audio('data:audio/mpeg;base64,' + data.audio);
+      const data = await res.json();
+      if (!data.audio) continue;
 
-    await new Promise((resolve) => {
-      ttsPlaying = true;
-      const done = () => { ttsPlaying = false; resolve(); };
-      ttsAudio.onended = done;
-      ttsAudio.onerror = done;
-      ttsAudio.play().catch(done);
-    });
-  } catch {
-    ttsPlaying = false;
+      if (ttsAudio) { ttsAudio.pause(); ttsAudio = null; }
+
+      ttsAudio = new Audio('data:audio/mpeg;base64,' + data.audio);
+
+      await new Promise((resolve) => {
+        ttsPlaying = true;
+        const done = () => { ttsPlaying = false; resolve(); };
+        ttsAudio.onended = done;
+        ttsAudio.onerror = done;
+        ttsAudio.play().catch(done);
+      });
+    } catch (e) {
+      console.warn('TTS chunk fail:', e);
+    }
   }
 }
 
@@ -1138,12 +1157,19 @@ function initRecognition() {
     if (!finalText.trim()) return;
 
     const lower = finalText.trim().toLowerCase();
-    if (!lower.includes('leo')) return;
+// "Leo" / "Lio" / "Li-o" / "Liyo" — sab match karo
+const wakeWords = ['leo', 'lio', 'liyo', 'li-o', 'le o', 'le-o', 'लियो', 'लिओ'];
+const hasWake = wakeWords.some(w => lower.includes(w));
+if (!hasWake) return;
 
-    const command = finalText.trim()
-      .replace(/leo/gi, '')
-      .replace(/^[,\s.]+/, '')
-      .trim();
+const command = finalText.trim()
+  .replace(/leo/gi, '')
+  .replace(/lio/gi, '')
+  .replace(/liyo/gi, '')
+  .replace(/लियो/g, '')
+  .replace(/लिओ/g, '')
+  .replace(/^[,\s.]+/, '')
+  .trim();
 
     if (command.length > 2) {
       handleCommand(command);
@@ -1534,20 +1560,12 @@ function init() {
   updateScreenTime();
   setInterval(updateScreenTime, 5000);
 
-  // Periodic nmap refresh
-  fetchNmap();
+   // Periodic nmap refresh
+   fetchNmap();
   setInterval(fetchNmap, 60000);
 
   // Start assistant
   startup();
-
-  // Unlock audio on first interaction (browser autoplay policy)
-  document.body.addEventListener('click', function unlock() {
-    if (ttsAudio) return;
-    const silent = new Audio();
-    silent.play().catch(() => {});
-    document.body.removeEventListener('click', unlock);
-  }, { once: true });
 }
 
 init();
