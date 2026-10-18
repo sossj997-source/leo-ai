@@ -3,25 +3,25 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-<title>Leo Mobile</title>
+<title>Leo</title>
 <style>
   :root {
-    --accent: #00d4aa;
-    --accent-bright: #00ffcc;
-    --bg: #000;
-    --fg: #e0e0e0;
-    --muted: #666;
-    --mono: 'Consolas', monospace;
+    --bg: #000000;
+    --fg: #ffffff;
+    --siri-blue: #1E90FF;
+    --siri-purple: #8A2BE2;
+    --siri-pink: #FF1493;
+    --siri-cyan: #00FFFF;
   }
 
   * { margin: 0; padding: 0; box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
 
   html, body {
-    background: var(--bg);
+    background-color: var(--bg);
     color: var(--fg);
-    font-family: 'Segoe UI', system-ui, sans-serif;
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
     height: 100vh;
-    height: 100dvh; /* Mobile browser address bar fix */
+    height: 100dvh;
     overflow: hidden;
     display: flex;
     flex-direction: column;
@@ -32,18 +32,15 @@
     display: flex;
     justify-content: space-between;
     align-items: center;
-    padding: 12px 24px;
-    font-family: var(--mono);
+    padding: 16px 24px;
     font-size: 11px;
-    color: var(--accent);
-    letter-spacing: 2px;
+    font-weight: 600;
+    color: rgba(255, 255, 255, 0.4);
     z-index: 10;
+    letter-spacing: 1px;
   }
-  .status-dot { display: flex; align-items: center; gap: 6px; }
-  .status-dot::before { content: '●'; animation: pulse 2s infinite; }
-  @keyframes pulse { 0%,100%{opacity:1;} 50%{opacity:0.3;} }
 
-  /* --- LIQUID ORB AREA --- */
+  /* --- SIRI ORB AREA --- */
   .orb-area {
     flex: 1;
     display: flex;
@@ -51,189 +48,263 @@
     align-items: center;
     justify-content: center;
     position: relative;
-    /* Blue background ki jagah dark green glow */
-    background: radial-gradient(circle at center, rgba(0, 212, 170, 0.08) 0%, transparent 60%);
-    overflow: hidden;
+    transition: opacity 0.5s;
   }
 
-  .liquid-orb {
-    width: 260px;
-    height: 260px;
+  .siri-orb {
+    width: 160px;
+    height: 160px;
     position: relative;
+    border-radius: 50%;
+    background: conic-gradient(
+      from 0deg,
+      var(--siri-blue),
+      var(--siri-purple),
+      var(--siri-pink),
+      var(--siri-cyan),
+      var(--siri-blue)
+    );
+    filter: blur(15px);
+    animation: spin 4s linear infinite, breathe 3s ease-in-out infinite alternate;
+    box-shadow: 0 0 60px rgba(138, 43, 226, 0.4);
+  }
+
+  .siri-core {
+    position: absolute;
+    width: 80%;
+    height: 80%;
+    background: rgba(0, 0, 0, 0.6);
+    border-radius: 50%;
+    backdrop-filter: blur(10px);
+    z-index: 2;
     display: flex;
     align-items: center;
     justify-content: center;
-    /* Glow shadow */
-    filter: drop-shadow(0 0 40px rgba(0, 212, 170, 0.3));
+  }
+  
+  .siri-core::after {
+    content: '';
+    width: 20px;
+    height: 20px;
+    background: #fff;
+    border-radius: 50%;
+    box-shadow: 0 0 20px #fff, 0 0 40px var(--siri-cyan);
+    animation: pulse 2s infinite;
   }
 
-  /* Base Blob */
-  .blob {
-    position: absolute;
-    width: 100%;
-    height: 100%;
-    background: linear-gradient(135deg, #00d4aa, #004d3d);
-    border-radius: 40% 60% 70% 30% / 40% 50% 60% 50%;
-    animation: morph 6s ease-in-out infinite;
-    box-shadow: inset 0 0 30px rgba(0, 255, 204, 0.6);
-    z-index: 1;
-  }
-
-  /* Overlay Blob (darker, contrast ke liye) */
-  .blob:nth-child(2) {
-    background: linear-gradient(225deg, #00ffcc, #001a15);
-    animation: morph2 8s ease-in-out infinite;
-    opacity: 0.6;
-    z-index: 2;
-    mix-blend-mode: screen;
-  }
-
-  /* Center Star */
-  .sparkle {
-    position: relative;
-    z-index: 10;
-    color: #fff;
-    font-size: 32px;
-    text-shadow: 0 0 20px #00ffcc, 0 0 40px #00d4aa;
-    animation: pulseStar 2s ease-in-out infinite;
-  }
-
-  /* Animations for Liquid shape shifting */
-  @keyframes morph {
-    0%, 100% { border-radius: 40% 60% 70% 30% / 40% 50% 60% 50%; transform: rotate(0deg) scale(1); }
-    34% { border-radius: 70% 30% 50% 50% / 30% 30% 70% 70%; transform: rotate(120deg) scale(1.05); }
-    67% { border-radius: 100% 60% 60% 100% / 100% 100% 60% 60%; transform: rotate(240deg) scale(0.95); }
-  }
-
-  @keyframes morph2 {
-    0%, 100% { border-radius: 60% 40% 30% 70% / 60% 30% 70% 40%; transform: rotate(0deg) scale(1.1); }
-    50% { border-radius: 30% 70% 70% 30% / 30% 30% 70% 70%; transform: rotate(-180deg) scale(0.9); }
-  }
-
-  @keyframes pulseStar {
-    0%, 100% { opacity: 0.8; transform: scale(1); }
-    50% { opacity: 1; transform: scale(1.1); }
-  }
-
-  /* Greeting text under orb */
   .greeting {
-    margin-top: 30px;
+    margin-top: 40px;
     font-size: 15px;
-    font-weight: 300;
-    color: #fff;
+    font-weight: 400;
+    color: rgba(255, 255, 255, 0.6);
     text-align: center;
-    letter-spacing: 1px;
-    text-shadow: 0 0 10px rgba(0, 212, 170, 0.5);
-    z-index: 10;
+    letter-spacing: 0.5px;
+    z-index: 2;
   }
 
-  /* --- CHAT AREA --- */
+  /* --- CHAT AREA (Unique Hologram Style) --- */
   .chat-area {
     flex: 1;
     overflow-y: auto;
-    padding: 10px 16px;
+    padding: 20px;
     display: flex;
     flex-direction: column;
-    gap: 12px;
+    gap: 16px;
     min-height: 0;
+    scroll-behavior: smooth;
   }
-  .chat-area::-webkit-scrollbar { display: none; } /* Hide scrollbar mobile */
+  .chat-area::-webkit-scrollbar { display: none; }
 
   .msg {
     max-width: 85%;
-    font-size: 13px;
+    font-size: 14px;
     line-height: 1.5;
-    padding: 10px 14px;
-    border-radius: 14px;
+    padding: 14px 18px;
+    position: relative;
     word-break: break-word;
-    animation: fadeUp 0.2s ease-out;
+    animation: slideIn 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+    backdrop-filter: blur(10px);
   }
-  @keyframes fadeUp { from{opacity:0;transform:translateY(5px);} to{opacity:1;transform:none;} }
 
+  .msg::before {
+    content: '';
+    position: absolute;
+    top: 0; left: 0; width: 100%; height: 100%;
+    pointer-events: none;
+    border-radius: inherit;
+  }
+
+  /* User Message - Glass block with left accent */
   .msg.user {
     align-self: flex-end;
-    background: rgba(0, 212, 170, 0.15);
+    background: rgba(255, 255, 255, 0.08);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-left: 3px solid var(--siri-pink);
+    border-radius: 4px 12px 12px 12px;
     color: #fff;
-    border-bottom-right-radius: 4px;
+    text-align: left;
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.3);
+  }
+  .msg.user::after {
+    content: 'SIRR';
+    display: block;
+    font-size: 9px;
+    color: var(--siri-pink);
+    letter-spacing: 2px;
+    margin-bottom: 4px;
+    font-weight: 700;
   }
 
+  /* Leo Message - Holographic panel with glow */
   .msg.leo {
     align-self: flex-start;
-    background: rgba(255, 255, 255, 0.05);
+    background: linear-gradient(180deg, rgba(138, 43, 226, 0.15) 0%, rgba(0, 0, 0, 0.2) 100%);
+    border: 1px solid rgba(138, 43, 226, 0.3);
+    border-left: 3px solid var(--siri-cyan);
+    border-radius: 12px 4px 12px 12px;
     color: #e0e0e0;
-    border-bottom-left-radius: 4px;
+    box-shadow: 0 0 20px rgba(0, 255, 255, 0.1), inset 0 0 15px rgba(138, 43, 226, 0.1);
+  }
+  .msg.leo::after {
+    content: '✦ LEO';
+    display: block;
+    font-size: 9px;
+    color: var(--siri-cyan);
+    letter-spacing: 2px;
+    margin-bottom: 4px;
+    font-weight: 700;
   }
 
-  /* --- INPUT AREA --- */
+  /* --- MODERN CHAT COMPOSER: bottom area only --- */
   .input-area {
-    padding: 12px 16px 24px 16px;
-    background: #000;
+    padding: 12px 16px calc(env(safe-area-inset-bottom, 0px) + 14px);
+    background: linear-gradient(to top, #05060b 72%, rgba(5,6,11,0));
     display: flex;
     gap: 10px;
     align-items: flex-end;
+    z-index: 10;
+  }
+
+  .composer-inner {
+    display: flex;
+    flex: 1;
+    align-items: flex-end;
+    gap: 6px;
+    background: rgba(22, 25, 39, 0.88);
+    backdrop-filter: blur(24px);
+    -webkit-backdrop-filter: blur(24px);
+    border: 1px solid rgba(255, 255, 255, 0.13);
+    border-radius: 26px;
+    padding: 7px 8px 7px 17px;
+    box-shadow: 0 8px 28px rgba(0, 0, 0, 0.28);
+    transition: border-color 0.2s ease, box-shadow 0.2s ease, background 0.2s ease;
+  }
+
+  .composer-inner:focus-within {
+    border-color: rgba(120, 116, 255, 0.72);
+    box-shadow: 0 0 0 3px rgba(120, 116, 255, 0.10), 0 8px 28px rgba(0,0,0,0.28);
+    background: rgba(26, 29, 45, 0.96);
   }
 
   .input-box {
     flex: 1;
-    background: #111;
-    border: 1px solid #333;
-    border-radius: 20px;
-    padding: 12px 16px;
-    color: #fff;
-    font-size: 14px;
+    min-width: 0;
+    background: transparent;
+    border: none;
+    color: #f7f7fb;
+    font-size: 15px;
     outline: none;
     resize: none;
-    max-height: 100px;
+    max-height: 120px;
     font-family: inherit;
+    line-height: 1.5;
+    padding: 9px 0;
   }
-  .input-box:focus { border-color: var(--accent); }
+
+  .input-box::placeholder { color: rgba(230, 232, 245, 0.43); }
 
   .btn {
-    width: 46px;
-    height: 46px;
+    width: 40px;
+    height: 40px;
     border-radius: 50%;
-    border: none;
-    background: #111;
-    color: var(--accent);
+    border: 1px solid transparent;
+    background: transparent;
+    color: #c7c9e7;
     display: flex;
     align-items: center;
     justify-content: center;
     font-size: 18px;
     cursor: pointer;
+    transition: transform 0.18s ease, background 0.18s ease, color 0.18s ease;
     flex-shrink: 0;
-    transition: all 0.2s;
   }
-  .btn.send { background: var(--accent); color: #000; border: none; }
-  .btn:active { transform: scale(0.95); }
-  .btn.mic.listening { background: rgba(255, 85, 102, 0.2); color: #ff5566; animation: pulse 1.5s infinite; }
+
+  .btn:hover { background: rgba(255,255,255,0.08); color: #fff; }
+  .btn:active { transform: scale(0.92); }
+
+  .btn.send {
+    background: linear-gradient(135deg, #a78bfa, #6366f1);
+    color: #fff;
+    width: 40px;
+    height: 40px;
+    font-size: 19px;
+    margin: 0;
+    box-shadow: 0 4px 14px rgba(99, 102, 241, 0.28);
+  }
+
+  .btn.send:disabled {
+    opacity: 0.42;
+    background: rgba(255,255,255,0.14);
+    color: rgba(255,255,255,0.5);
+    box-shadow: none;
+  }
+
+  .btn.mic.listening {
+    color: #ff6bba;
+    background: rgba(255, 107, 186, 0.12);
+    animation: pulse 1.5s infinite;
+  }
+
+  @media (max-width: 480px) {
+    .input-area { padding-left: 12px; padding-right: 12px; }
+    .composer-inner { padding-left: 15px; }
+  }
+
+  /* Animations */
+  @keyframes slideIn { from{opacity:0;transform:translateX(-10px);} to{opacity:1;transform:none;} }
+  @keyframes spin { 100% { transform: rotate(360deg); } }
+  @keyframes breathe { 
+    0% { transform: scale(1); filter: blur(15px); } 
+    100% { transform: scale(1.15); filter: blur(20px); } 
+  }
+  @keyframes pulse { 
+    0%, 100% { opacity: 1; transform: scale(1); } 
+    50% { opacity: 0.5; transform: scale(0.8); } 
+  }
 </style>
 </head>
 <body>
 
-  <!-- Top Bar -->
   <div class="top-bar">
-    <div class="status-dot">ONLINE</div>
+    <div>Leo AI</div>
     <div id="time">--:--</div>
   </div>
 
-  <!-- Center Area (Orb + Greeting) -->
   <div class="orb-area" id="orbArea">
-    <div class="liquid-orb">
-      <div class="blob"></div>
-      <div class="blob"></div>
-      <div class="sparkle">✦</div>
+    <div class="siri-orb">
+      <div class="siri-core"></div>
     </div>
     <div class="greeting" id="greeting">Bolo Sirr...</div>
   </div>
 
-  <!-- Chat Area -->
   <div class="chat-area" id="chatArea"></div>
 
-  <!-- Bottom Input Area -->
   <div class="input-area">
-    <button class="btn mic" id="micBtn">🎤</button>
-    <textarea class="input-box" id="chatInput" rows="1" placeholder="Message..."></textarea>
-    <button class="btn send" id="sendBtn">↑</button>
+    <div class="composer-inner">
+      <textarea class="input-box" id="chatInput" rows="1" placeholder="Message Leo..."></textarea>
+      <button class="btn mic" id="micBtn">🎤</button>
+      <button class="btn send" id="sendBtn" disabled>↑</button>
+    </div>
   </div>
 
 <script>
@@ -250,24 +321,29 @@
   const orbArea = document.getElementById('orbArea');
   const greeting = document.getElementById('greeting');
 
-  // Time
   setInterval(() => {
     const d = new Date();
     document.getElementById('time').textContent = 
       `${String(d.getHours()).padStart(2,'0')}:${String(d.getMinutes()).padStart(2,'0')}`;
   }, 1000);
 
-  // Auto-resize textarea
   chatInput.addEventListener('input', function() {
     this.style.height = 'auto';
     this.style.height = (this.scrollHeight) + 'px';
+    
+    // Send button enable/disable logic
+    if (this.value.trim().length > 0 && !isProcessing) {
+      sendBtn.disabled = false;
+    } else {
+      sendBtn.disabled = true;
+    }
   });
 
-  // --- UI Helpers ---
   function addMsg(role, text) {
     const div = document.createElement('div');
     div.className = `msg ${role}`;
-    div.textContent = text;
+    const textNode = document.createTextNode(text);
+    div.appendChild(textNode);
     chatArea.appendChild(div);
     chatArea.scrollTop = chatArea.scrollHeight;
     return div;
@@ -276,25 +352,25 @@
   function setProcessing(active) {
     isProcessing = active;
     if (active) {
-      // Orb ko aur bright kardo jab soch raha ho
-      orbArea.style.background = 'radial-gradient(circle at center, rgba(0, 212, 170, 0.2) 0%, transparent 70%)';
-      greeting.textContent = 'Soch raha hoon...';
+      greeting.textContent = 'Thinking...';
+      sendBtn.disabled = true;
     } else {
-      orbArea.style.background = 'radial-gradient(circle at center, rgba(0, 212, 170, 0.08) 0%, transparent 60%)';
       greeting.textContent = 'Bolo Sirr...';
+      // Re-enable if there's text
+      if (chatInput.value.trim().length > 0) {
+        sendBtn.disabled = false;
+      }
     }
   }
 
-  // --- Chat Logic ---
   async function sendMessage(text) {
     if (!text.trim() || isProcessing) return;
-    
-    // Chat dikhao, Orb area chota kardo
     orbArea.style.display = 'none';
     
     addMsg('user', text);
     chatInput.value = '';
     chatInput.style.height = 'auto';
+    sendBtn.disabled = true;
     setProcessing(true);
 
     const leoMsg = addMsg('leo', '...');
@@ -307,31 +383,30 @@
       });
       
       if (!res.ok) throw new Error('Network error');
-      
       const data = await res.json();
       sessionId = data.session_id;
       
-      leoMsg.textContent = data.response || 'Kuch samajh nahi aaya.';
+      leoMsg.textContent = data.response || '...';
       chatArea.scrollTop = chatArea.scrollHeight;
-      
     } catch (e) {
-      leoMsg.textContent = 'Backend offline hai Sirr.';
+      leoMsg.textContent = 'Connection lost.';
     } finally {
       setProcessing(false);
     }
   }
 
   sendBtn.addEventListener('click', () => sendMessage(chatInput.value));
+  
   chatInput.addEventListener('keydown', (e) => {
     if (e.key === 'Enter' && !e.shiftKey) {
       e.preventDefault();
-      sendMessage(chatInput.value);
+      if (!sendBtn.disabled) {
+        sendMessage(chatInput.value);
+      }
     }
   });
 
-  // --- Voice (Speech Recognition) ---
   const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
-
   if (SpeechRecognition) {
     recognition = new SpeechRecognition();
     recognition.continuous = false;
@@ -341,7 +416,8 @@
     recognition.onstart = () => {
       isListening = true;
       micBtn.classList.add('listening');
-      greeting.textContent = 'Sun raha hoon...';
+      greeting.textContent = 'Listening...';
+      orbArea.style.display = 'flex';
     };
 
     recognition.onend = () => {
@@ -355,13 +431,9 @@
       for (let i = event.resultIndex; i < event.results.length; i++) {
         if (event.results[i].isFinal) finalText += event.results[i][0].transcript;
       }
-      
       if (finalText) {
-        // "Leo" word hata do agar user bole
-        const text = finalText.replace(/leo/gi, '').trim();
-        if (text.length > 1) {
-          sendMessage(text);
-        }
+        const text = finalText.replace(/\b(leo|lio|liyo)\b[,.!?]?/gi, '').trim();
+        if (text.length > 1) sendMessage(text);
       }
     };
 
