@@ -9,7 +9,6 @@ from pathlib import Path
 from fastapi import FastAPI, HTTPException, Header
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import StreamingResponse, Response
-from pydantic import BaseModel
 from typing import Optional
 import os
 import secrets
@@ -370,6 +369,7 @@ async def recon_bluetooth():
     from app.recon import get_bluetooth_devices
     return {"devices": get_bluetooth_devices()}
 
+
 # ==================================================
 # FRONTEND — serve static files
 # ==================================================
@@ -387,10 +387,17 @@ if os.path.exists(FRONTEND_DIR):
     async def serve_index():
         return FileResponse(os.path.join(FRONTEND_DIR, "index.html"))
 
+    # NAYA ROUTE YAHAN HAI
+    @app.get("/mobile.html", include_in_schema=False)
+    async def serve_mobile():
+        return FileResponse(os.path.join(FRONTEND_DIR, "mobile.html"))
+
     app.mount("/static", StaticFiles(directory=FRONTEND_DIR), name="static")
     print(f"FRONTEND SERVED FROM: {FRONTEND_DIR}")
 else:
     print(f"FRONTEND DIR NOT FOUND: {FRONTEND_DIR}")
+
+
 # ==================================================
 # RUN
 # ==================================================
