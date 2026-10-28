@@ -51,6 +51,13 @@
     transition: opacity 0.5s;
   }
 
+  /* Jab mic sun raha ho toh orb hile */
+  .orb-area.listening .siri-orb {
+    animation: spin 2s linear infinite, breathe 0.8s ease-in-out infinite alternate;
+    filter: blur(20px);
+    box-shadow: 0 0 80px rgba(255, 20, 147, 0.6); /* Pink glow when listening */
+  }
+
   .siri-orb {
     width: 160px;
     height: 160px;
@@ -67,6 +74,7 @@
     filter: blur(15px);
     animation: spin 4s linear infinite, breathe 3s ease-in-out infinite alternate;
     box-shadow: 0 0 60px rgba(138, 43, 226, 0.4);
+    transition: all 0.4s ease;
   }
 
   .siri-core {
@@ -93,9 +101,14 @@
     color: rgba(255, 255, 255, 0.6);
     text-align: center; letter-spacing: 0.5px;
     z-index: 2;
+    transition: color 0.3s;
   }
 
-  /* --- CHAT AREA (Unique Hologram Style) --- */
+  .orb-area.listening .greeting {
+    color: var(--siri-pink);
+  }
+
+  /* --- CHAT AREA --- */
   .chat-area {
     flex: 1;
     overflow-y: auto;
@@ -119,15 +132,6 @@
     backdrop-filter: blur(10px);
   }
 
-  .msg::before {
-    content: '';
-    position: absolute;
-    top: 0; left: 0; width: 100%; height: 100%;
-    pointer-events: none;
-    border-radius: inherit;
-  }
-
-  /* User Message */
   .msg.user {
     align-self: flex-end;
     background: rgba(255, 255, 255, 0.08);
@@ -144,7 +148,6 @@
     letter-spacing: 2px; margin-bottom: 4px; font-weight: 700;
   }
 
-  /* Leo Message */
   .msg.leo {
     align-self: flex-start;
     background: linear-gradient(180deg, rgba(138, 43, 226, 0.15) 0%, rgba(0, 0, 0, 0.2) 100%);
@@ -160,7 +163,7 @@
     letter-spacing: 2px; margin-bottom: 4px; font-weight: 700;
   }
 
-  /* --- NEW COMPOSER (Bottom Box) --- */
+  /* --- COMPOSER (Bottom Box) --- */
   .input-area {
     padding: 10px 20px calc(env(safe-area-inset-bottom, 0px) + 20px) 20px;
     background: linear-gradient(to top, #000 40%, transparent);
@@ -178,8 +181,8 @@
     backdrop-filter: blur(20px);
     -webkit-backdrop-filter: blur(20px);
     border: 1px solid rgba(255, 255, 255, 0.12);
-    border-radius: 28px;
-    padding: 8px 8px 8px 20px;
+    border-radius: 24px;
+    padding: 6px 6px 6px 18px;
     transition: all 0.3s var(--ease);
   }
   
@@ -197,49 +200,93 @@
     font-size: 15px;
     outline: none;
     resize: none;
-    max-height: 120px;
+    max-height: 100px;
     font-family: inherit;
     line-height: 1.5;
     padding: 8px 0;
   }
   .input-box::placeholder { color: rgba(255, 255, 255, 0.3); }
 
-  .btn {
-    width: 44px; height: 44px;
+  /* Send Button */
+  .btn-send {
+    width: 36px; height: 36px;
     border-radius: 50%;
     border: none;
-    background: transparent;
-    color: var(--siri-cyan);
+    background: #fff;
+    color: #000;
     display: flex; align-items: center; justify-content: center;
-    font-size: 20px;
+    font-size: 16px;
     cursor: pointer;
     transition: all 0.2s;
     flex-shrink: 0;
+    margin-left: 8px;
+    margin-bottom: 2px;
   }
   
-  .btn:active { transform: scale(0.9); }
-  
-  .btn.send { 
-    background: #fff; 
-    color: #000; 
-    width: 38px; height: 38px;
-    font-size: 16px;
-    margin-bottom: 3px;
-    margin-right: 3px;
-  }
-  
-  .btn.send:disabled {
+  .btn-send:disabled {
     opacity: 0.5;
     background: rgba(255,255,255,0.2);
     color: rgba(0,0,0,0.5);
   }
-  
-  .btn.mic.listening { 
-    color: var(--siri-pink);
-    animation: pulse 1.5s infinite; 
+
+  /* --- MIC BUTTON & ANIMATION --- */
+  .mic-wrapper {
+    position: relative;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .btn-mic {
+    width: 52px; height: 52px;
+    border-radius: 50%;
+    border: none;
+    background: rgba(255, 255, 255, 0.1);
+    backdrop-filter: blur(10px);
+    color: var(--siri-cyan);
+    display: flex; align-items: center; justify-content: center;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    flex-shrink: 0;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    z-index: 2;
+  }
+
+  .btn-mic svg {
+    width: 22px; height: 22px;
+    transition: all 0.3s ease;
+  }
+
+  .btn-mic.listening { 
+    background: var(--siri-pink);
+    color: #fff;
+    border-color: transparent;
+    box-shadow: 0 0 20px var(--siri-pink);
+  }
+
+  /* Pulse Ring Animation */
+  .pulse-ring {
+    position: absolute;
+    top: 50%; left: 50%;
+    transform: translate(-50%, -50%);
+    width: 52px; height: 52px;
+    border-radius: 50%;
+    border: 2px solid var(--siri-pink);
+    opacity: 0;
+    z-index: 1;
+    pointer-events: none;
+  }
+
+  .btn-mic.listening ~ .pulse-ring {
+    animation: ripple 1.5s infinite cubic-bezier(0.2, 0.8, 0.4, 1);
   }
 
   /* Animations */
+  @keyframes ripple {
+    0% { transform: translate(-50%, -50%) scale(1); opacity: 0.8; }
+    100% { transform: translate(-50%, -50%) scale(2); opacity: 0; }
+  }
+
   @keyframes slideIn { from{opacity:0;transform:translateX(-10px);} to{opacity:1;transform:none;} }
   @keyframes spin { 100% { transform: rotate(360deg); } }
   @keyframes breathe { 
@@ -269,11 +316,24 @@
   <div class="chat-area" id="chatArea"></div>
 
   <div class="input-area">
+    
     <div class="composer-inner">
       <textarea class="input-box" id="chatInput" rows="1" placeholder="Message Leo..."></textarea>
-      <button class="btn mic" id="micBtn">🎤</button>
-      <button class="btn send" id="sendBtn" disabled>↑</button>
+      <button class="btn-send" id="sendBtn" disabled>↑</button>
     </div>
+
+    <div class="mic-wrapper">
+      <button class="btn-mic" id="micBtn">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <rect x="9" y="2" width="6" height="12" rx="3"/>
+          <path d="M5 10a7 7 0 0 0 14 0M12 19v3"/>
+        </svg>
+      </button>
+      <div class="pulse-ring"></div>
+      <div class="pulse-ring" style="animation-delay: 0.5s;"></div>
+      <div class="pulse-ring" style="animation-delay: 1s;"></div>
+    </div>
+
   </div>
 
 <script>
@@ -356,7 +416,6 @@
       leoMsg.textContent = data.response || '...';
       chatArea.scrollTop = chatArea.scrollHeight;
 
-      // TTS PLAY LOGIC
       if (data.response) {
         playTTS(data.response);
       }
@@ -368,13 +427,12 @@
     }
   }
 
-  // --- TTS FUNCTION ---
   async function playTTS(text) {
     try {
       const res = await fetch(`${API}/tts`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ text: text.slice(0, 500) }), // Max 500 chars
+        body: JSON.stringify({ text: text.slice(0, 500) }),
       });
       if (!res.ok) return;
       const data = await res.json();
@@ -398,24 +456,25 @@
     }
   });
 
-  // --- MIC FIXED LOGIC ---
   const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
   if (SpeechRecognition) {
     recognition = new SpeechRecognition();
     recognition.continuous = false;
     recognition.interimResults = true; 
-    recognition.lang = 'en-IN'; // Indian English
+    recognition.lang = 'en-IN';
 
     recognition.onstart = () => {
       isListening = true;
       micBtn.classList.add('listening');
+      orbArea.classList.add('listening'); // Orb animation start
       greeting.textContent = 'Listening...';
-      orbArea.style.display = 'flex'; // Show orb when listening
+      orbArea.style.display = 'flex';
     };
 
     recognition.onend = () => {
       isListening = false;
       micBtn.classList.remove('listening');
+      orbArea.classList.remove('listening'); // Orb animation stop
       greeting.textContent = 'Bolo Sirr...';
     };
 
@@ -432,13 +491,11 @@
         }
       }
 
-      // Show transcript as user speaks
       if (interimText) {
         chatInput.value = interimText.trim();
         chatInput.dispatchEvent(new Event('input'));
       }
 
-      // When user finishes speaking
       if (finalText) {
         let cleanText = finalText.replace(/\b(leo|lio|liyo)\b[,.!?]?/gi, '').trim();
         chatInput.value = ''; 
