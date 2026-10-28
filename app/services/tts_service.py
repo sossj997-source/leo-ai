@@ -12,7 +12,7 @@ logger = logging.getLogger("JARVIS")
 
 class EdgeTTSService:
 
-    def __init__(self, voice="hi-IN-MadhurNeural"):
+    def __init__(self, voice="hi-IN-HemantNeural"):
         self.voice = voice
 
     async def _generate_audio(self, text: str):
