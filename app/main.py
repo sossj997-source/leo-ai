@@ -90,6 +90,9 @@ async def lifespan(app: FastAPI):
         print(f"AGENT INITIALIZED SUCCESSFULLY WITH {len(tool_registry)} TOOLS")
 
         register_writing_tools(tool_registry, writing_service)
+        from app.agent.tools.mobile_tools import register_mobile_tools
+        register_mobile_tools(tool_registry)
+        print("MOBILE TOOLS REGISTERED SUCCESSFULLY")
         print("WRITING TOOLS REGISTERED SUCCESSFULLY")
         from app.agent.tools.self_code_tools import register_self_code_tools
         register_self_code_tools(tool_registry)
