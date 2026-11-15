@@ -1,0 +1,20 @@
+{
+  "name": "leo-ai",
+  "version": "1.0.0",
+  "description": "An intelligent AI assistant built with FastAPI, LangChain, Groq AI, and a modern glass-morphism web UI. JARVIS provides two chat modes (General and Realtime with web search), streaming responses, text-to-speech, voice input, and learns from your personal data files. Everything runs on one server with one command.",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/sossj997-source/leo-ai.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/sossj997-source/leo-ai/issues"
+  },
+  "homepage": "https://github.com/sossj997-source/leo-ai#readme"
+}

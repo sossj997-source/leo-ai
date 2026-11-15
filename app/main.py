@@ -177,10 +177,23 @@ class WritingRequest(BaseModel):
 
 
 # ==================================================
-# CHAT (non-streaming)
+# CHAT (non-streaming) - Routes through Agent for tool support
 # ==================================================
 @app.post("/chat")
 async def chat(req: ChatRequest):
+    # Use agent if available (has tools like mobile_tools)
+    if agent is not None:
+        try:
+            result = agent.run(message=req.message, session_id=req.session_id)
+            # Return in the format mobile UI expects
+            return {
+                "session_id": req.session_id or "default",
+                "response": result.message
+            }
+        except Exception as e:
+            raise HTTPException(status_code=400, detail=str(e))
+
+    # Fallback to chat_service if agent not initialized
     if chat_service is None:
         raise HTTPException(status_code=503, detail="Chat service not initialized.")
     try:
@@ -192,10 +205,22 @@ async def chat(req: ChatRequest):
 
 
 # ==================================================
-# REALTIME CHAT (non-streaming)
+# REALTIME CHAT (non-streaming) - Routes through Agent for tool support
 # ==================================================
 @app.post("/chat/realtime")
 async def chat_realtime(req: ChatRequest):
+    # Use agent if available (has tools like mobile_tools)
+    if agent is not None:
+        try:
+            result = agent.run(message=req.message, session_id=req.session_id)
+            return {
+                "session_id": req.session_id or "default",
+                "response": result.message
+            }
+        except Exception as e:
+            raise HTTPException(status_code=400, detail=str(e))
+
+    # Fallback to chat_service if agent not initialized
     if chat_service is None:
         raise HTTPException(status_code=503, detail="Chat service not initialized.")
     try:
@@ -207,10 +232,35 @@ async def chat_realtime(req: ChatRequest):
 
 
 # ==================================================
-# CHAT STREAM (SSE)
+# CHAT STREAM (SSE) - Routes through Agent for tool support
 # ==================================================
 @app.post("/chat/stream")
 async def chat_stream(req: ChatRequest):
+    # Use agent if available (has tools like mobile_tools)
+    if agent is not None:
+        async def agent_event_generator():
+            try:
+                result = agent.run(message=req.message, session_id=req.session_id)
+                # Yield session_id first
+                yield f"data: {json.dumps({'session_id': req.session_id or 'default'})}\n\n"
+                # Yield the full response as a chunk
+                yield f"data: {json.dumps({'chunk': result.message})}\n\n"
+                # Yield done
+                yield f"data: {json.dumps({'done': True})}\n\n"
+            except Exception as e:
+                logger.error(f"Agent stream error: {e}")
+                yield f"data: {json.dumps({'error': str(e)})}\n\n"
+
+        return StreamingResponse(
+            agent_event_generator(),
+            media_type="text/event-stream",
+            headers={
+                "Cache-Control": "no-cache",
+                "X-Accel-Buffering": "no",
+            },
+        )
+
+    # Fallback to chat_service if agent not initialized
     if chat_service is None:
         raise HTTPException(status_code=503, detail="Chat service not initialized.")
 
@@ -240,10 +290,35 @@ async def chat_stream(req: ChatRequest):
 
 
 # ==================================================
-# REALTIME CHAT STREAM (SSE)
+# REALTIME CHAT STREAM (SSE) - Routes through Agent for tool support
 # ==================================================
 @app.post("/chat/realtime/stream")
 async def chat_realtime_stream(req: ChatRequest):
+    # Use agent if available (has tools like mobile_tools)
+    if agent is not None:
+        async def agent_event_generator():
+            try:
+                result = agent.run(message=req.message, session_id=req.session_id)
+                # Yield session_id first
+                yield f"data: {json.dumps({'session_id': req.session_id or 'default'})}\n\n"
+                # Yield the full response as a chunk
+                yield f"data: {json.dumps({'chunk': result.message})}\n\n"
+                # Yield done
+                yield f"data: {json.dumps({'done': True})}\n\n"
+            except Exception as e:
+                logger.error(f"Agent realtime stream error: {e}")
+                yield f"data: {json.dumps({'error': str(e)})}\n\n"
+
+        return StreamingResponse(
+            agent_event_generator(),
+            media_type="text/event-stream",
+            headers={
+                "Cache-Control": "no-cache",
+                "X-Accel-Buffering": "no",
+            },
+        )
+
+    # Fallback to chat_service if agent not initialized
     if chat_service is None:
         raise HTTPException(status_code=503, detail="Chat service not initialized.")
 
